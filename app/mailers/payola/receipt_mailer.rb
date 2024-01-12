@@ -1,6 +1,6 @@
 module Payola
   class ReceiptMailer < ActionMailer::Base
-    add_template_helper ::ApplicationHelper
+    helper ::ApplicationHelper
     helper Payola::PriceHelper
 
     def receipt(sale_guid)
