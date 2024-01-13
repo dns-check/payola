@@ -7,7 +7,7 @@ module Payola
       
       if options[:at_period_end] == true
         # Store that the subscription will be canceled at the end of the billing period
-        subscription.update_attributes(cancel_at_period_end: true)
+        subscription.update(cancel_at_period_end: true)
       else
         # Cancel the subscription immediately
         subscription.cancel!

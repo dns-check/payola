@@ -14,7 +14,7 @@ module Payola
 
         sale.finish!
       rescue Stripe::StripeError, RuntimeError => e
-        sale.update_attributes(error: e.message)
+        sale.update(error: e.message)
         sale.fail!
       end
 
@@ -51,7 +51,7 @@ module Payola
         fee = balance.fee
       end
 
-      sale.update_attributes(
+      sale.update(
         stripe_id:          charge.id,
         stripe_customer_id: customer.id,
         card_last4:         charge.source.last4,
