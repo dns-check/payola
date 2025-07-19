@@ -11,7 +11,7 @@ module Payola
         customer = Stripe::Customer.retrieve(subscription.stripe_customer_id, secret_key)
         card = customer.sources.retrieve(customer.default_source, secret_key)
 
-        subscription.update_attributes(
+        subscription.update(
           card_type: card.brand,
           card_last4: card.last4,
           card_expiration: Date.parse("#{card.exp_year}/#{card.exp_month}/1")
