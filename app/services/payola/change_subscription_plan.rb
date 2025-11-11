@@ -5,13 +5,19 @@ module Payola
       old_plan = subscription.plan
 
       begin
-        sub = retrieve_subscription_for_customer(subscription, secret_key)
-        sub.plan = plan.stripe_id
-        sub.prorate = should_prorate?(subscription, plan, coupon_code)
-        sub.coupon = coupon_code if coupon_code.present?
-        sub.quantity = quantity
-        sub.trial_end = trial_end if trial_end.present?
-        sub.save
+        update_params = {
+          plan: plan.stripe_id,
+          prorate: should_prorate?(subscription, plan, coupon_code),
+          quantity: quantity
+        }
+        update_params[:coupon] = coupon_code if coupon_code.present?
+        update_params[:trial_end] = trial_end if trial_end.present?
+
+        Stripe::Subscription.update(
+          subscription.stripe_id,
+          update_params,
+          secret_key
+        )
 
         subscription.cancel_at_period_end = false
         subscription.plan = plan

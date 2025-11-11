@@ -5,10 +5,11 @@ module Payola
       old_quantity = subscription.quantity
 
       begin
-        customer = Stripe::Customer.retrieve(subscription.stripe_customer_id, secret_key)
-        sub = customer.subscriptions.retrieve(subscription.stripe_id)
-        sub.quantity = quantity
-        sub.save
+        Stripe::Subscription.update(
+          subscription.stripe_id,
+          { quantity: quantity },
+          secret_key
+        )
 
         subscription.quantity = quantity
         subscription.save!

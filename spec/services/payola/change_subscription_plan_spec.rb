@@ -30,64 +30,52 @@ module Payola
       end
 
       context "trial_end" do
-        before do
-          @sub = Stripe::Subscription.new
-
-          allow(@sub).to receive(:save).and_return(true) # trial_end value is wiped when save is called
-          allow(ChangeSubscriptionPlan).to receive(:retrieve_subscription_for_customer).and_return(@sub)
-        end
-
         context "not set" do
-          before do
-            Payola::ChangeSubscriptionPlan.call(@subscription, @plan2)
-          end
+          it "should not include trial_end in update params" do
+            expect(Stripe::Subscription).to receive(:update) do |id, params, key|
+              expect(params).not_to have_key(:trial_end)
+            end
 
-          it "should not have trial_end set" do
-            expect(@sub.try(:trial_end)).to be_nil
+            Payola::ChangeSubscriptionPlan.call(@subscription, @plan2)
           end
         end
 
         context "set" do
-          before do
+          it "should include trial_end in update params" do
             @quantity = 1
             @coupon = nil
             @trial_end = "now"
-            Payola::ChangeSubscriptionPlan.call(@subscription, @plan2, @quantity, @coupon, @trial_end)
-          end
 
-          it "should have the trial_end" do
-            expect(@sub.trial_end).to eq(@trial_end)
+            expect(Stripe::Subscription).to receive(:update) do |id, params, key|
+              expect(params[:trial_end]).to eq(@trial_end)
+            end
+
+            Payola::ChangeSubscriptionPlan.call(@subscription, @plan2, @quantity, @coupon, @trial_end)
           end
         end
       end
 
       context "coupon" do
-        before do
-          @sub = Stripe::Subscription.new
-
-          allow(@sub).to receive(:save).and_return(true) # coupon value is wiped when save is called
-          allow(ChangeSubscriptionPlan).to receive(:retrieve_subscription_for_customer).and_return(@sub)
-        end
-
         context "not set" do
-          before do
-            Payola::ChangeSubscriptionPlan.call(@subscription, @plan2)
-          end
+          it "should not include coupon in update params" do
+            expect(Stripe::Subscription).to receive(:update) do |id, params, key|
+              expect(params).not_to have_key(:coupon)
+            end
 
-          it "should not have the coupon" do
-            expect(@sub.try(:coupon)).to be_nil
+            Payola::ChangeSubscriptionPlan.call(@subscription, @plan2)
           end
         end
 
         context "set" do
-          before do
+          it "should include coupon in update params" do
             @coupon = build :payola_coupon
             @quantity = 1
-            Payola::ChangeSubscriptionPlan.call(@subscription, @plan2, @quantity, @coupon)
-          end
 
-          it "should have the coupon" do
-            expect(@sub.coupon.code).to eq(@coupon.code)
+            expect(Stripe::Subscription).to receive(:update) do |id, params, key|
+              expect(params[:coupon]).to eq(@coupon)
+            end
+
+            Payola::ChangeSubscriptionPlan.call(@subscription, @plan2, @quantity, @coupon)
           end
         end
       end
