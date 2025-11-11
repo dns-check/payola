@@ -1,7 +1,7 @@
-FactoryGirl.define do
+FactoryBot.define do
   factory :product do
-    name "Foo"
+    name { "Foo" }
     sequence(:permalink) { |n| "foo-#{n}" }
-    price 100
+    price { 100 }
   end
 end

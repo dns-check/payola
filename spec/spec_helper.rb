@@ -12,7 +12,7 @@ end
 ENV["RAILS_ENV"] ||= 'test'
 require File.expand_path("../dummy/config/environment", __FILE__)
 require 'rspec/rails'
-require 'factory_girl_rails'
+require 'factory_bot_rails'
 require 'stripe_mock'
 
 # Set Stripe API version to match what Payola was built for
@@ -76,7 +76,7 @@ RSpec.configure do |config|
   # https://relishapp.com/rspec/rspec-rails/v/3-0/docs
   config.infer_spec_type_from_file_location!
 
-  config.include FactoryGirl::Syntax::Methods
+  config.include FactoryBot::Syntax::Methods
 
   config.before(:each) do
     StripeMock.start
