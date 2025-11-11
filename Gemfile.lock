@@ -2,11 +2,11 @@ PATH
   remote: .
   specs:
     payola-payments (1.5.1)
-      aasm (>= 4.0.7)
-      jquery-rails
-      rails (>= 4.1)
+      aasm (~> 5.5)
+      jquery-rails (~> 4.6)
+      rails (~> 8.0.4)
       stripe (~> 8.7.0)
-      stripe_event (>= 2.0.0)
+      stripe_event (~> 2.13)
 
 GEM
   remote: https://rubygems.org/
@@ -287,7 +287,7 @@ DEPENDENCIES
   payola-payments!
   rails (~> 8.0.0)
   rspec-rails
-  rspec_junit_formatter
+  rspec_junit_formatter (~> 0.6.0)
   simplecov
   sqlite3 (~> 2.1)
   stripe-ruby-mock (~> 5.0.0)
