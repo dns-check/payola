@@ -22,5 +22,11 @@ module Dummy
     # config.i18n.load_path += Dir[Rails.root.join('my', 'locales', '*.{rb,yml}').to_s]
     # config.i18n.default_locale = :de
     config.i18n.available_locales = [:en, :de]
+
+    # Configure secret_key_base for test environment
+    # For development and production, set SECRET_KEY_BASE environment variable
+    if Rails.env.test?
+      config.secret_key_base = SecureRandom.hex(64)
+    end
   end
 end
