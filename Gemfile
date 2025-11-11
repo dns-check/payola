@@ -8,4 +8,4 @@ group :test do
 end
 gem 'rspec_junit_formatter'
 
-gem 'rails', '~> 7.1.0'
+gem 'rails', '~> 7.2.0'
