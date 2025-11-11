@@ -18,13 +18,13 @@ Gem::Specification.new do |s|
 
   s.add_dependency "rails", ">= 4.1"
   s.add_dependency "jquery-rails"
-  s.add_dependency "stripe", "~> 3.0"
+  s.add_dependency "stripe", ">= 3.0", "< 6.0"
   s.add_dependency "aasm", ">= 4.0.7"
   s.add_dependency "stripe_event", ">= 2.0.0"
 
   s.add_development_dependency "sqlite3", "~> 1.4.0"
   s.add_development_dependency "rspec-rails"
   s.add_development_dependency "factory_bot_rails"
-  s.add_development_dependency "stripe-ruby-mock", "~> 2.5.8"
+  s.add_development_dependency "stripe-ruby-mock", "~> 3.1.0"
   s.add_development_dependency "sucker_punch", "~> 1.2.1"
 end
