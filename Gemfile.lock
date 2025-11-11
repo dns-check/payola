@@ -247,10 +247,11 @@ GEM
     sqlite3 (2.8.0-x86_64-linux-musl)
     stringio (3.1.7)
     stripe (5.55.0)
-    stripe-ruby-mock (3.1.0)
+    stripe-ruby-mock (5.0.0)
       dante (>= 0.2.0)
+      drb (>= 2.0.4, < 3)
       multi_json (~> 1.0)
-      stripe (> 5, < 6)
+      stripe (> 5, < 14)
     stripe_event (2.13.0)
       activesupport (>= 3.1)
       stripe (>= 2.8, < 18)
@@ -289,7 +290,7 @@ DEPENDENCIES
   rspec_junit_formatter
   simplecov
   sqlite3 (~> 2.1)
-  stripe-ruby-mock (~> 3.1.0)
+  stripe-ruby-mock (~> 5.0.0)
   sucker_punch (>= 2.0)
 
 BUNDLED WITH
