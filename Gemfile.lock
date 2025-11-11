@@ -5,7 +5,7 @@ PATH
       aasm (>= 4.0.7)
       jquery-rails
       rails (>= 4.1)
-      stripe (>= 3.0, < 6.0)
+      stripe (~> 6.5.0)
       stripe_event (>= 2.0.0)
 
 GEM
@@ -246,7 +246,7 @@ GEM
     sqlite3 (2.8.0-x86_64-linux-gnu)
     sqlite3 (2.8.0-x86_64-linux-musl)
     stringio (3.1.7)
-    stripe (5.55.0)
+    stripe (6.5.0)
     stripe-ruby-mock (5.0.0)
       dante (>= 0.2.0)
       drb (>= 2.0.4, < 3)
