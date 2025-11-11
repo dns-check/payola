@@ -9,6 +9,9 @@ All notable changes to Payola will be documented in this file.
 ### Breaking Changes
 - **Removed docverter development dependency**: The unmaintained `docverter` gem was removed as a development dependency to resolve Ruby 2.7+ compatibility warnings. If you use PDF receipt functionality (`Payola.pdf_receipt = true`), you must now explicitly add `gem 'docverter'` to your application's Gemfile or migrate to an alternative PDF generation system.
 
+### Enhancements
+- Added support for Ruby 3.2. Previously, only Ruby 2.7 and earlier were supported.
+
 ### Bug Fixes
 - Fix Ruby 2.7+ numbered parameter warnings by removing dependency on mime-types 2.x (via docverter removal)
 - Change `Payola.reset!` to use `StripeEvent.event_filter` rather than `event_retriever`. #335
