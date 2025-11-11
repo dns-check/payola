@@ -26,5 +26,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rspec-rails"
   s.add_development_dependency "factory_bot_rails"
   s.add_development_dependency "stripe-ruby-mock", "~> 3.1.0"
-  s.add_development_dependency "sucker_punch", "~> 1.2.1"
+  s.add_development_dependency "sucker_punch", ">= 2.0"
 end
