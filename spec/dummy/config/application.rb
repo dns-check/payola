@@ -7,10 +7,8 @@ require "payola"
 
 module Dummy
   class Application < Rails::Application
-    # Initialize configuration defaults for Rails 5.0 (the version this was originally built for).
-    # This ensures predictable behavior even as we upgrade Rails versions.
-    # When ready to adopt Rails 6.1+ defaults, change this to 6.1.
-    config.load_defaults 5.0
+    # Initialize configuration defaults for Rails 6.1
+    config.load_defaults 6.1
 
     # Settings in config/environments/* take precedence over those specified here.
     # Application configuration should go into files in config/initializers
