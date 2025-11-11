@@ -8,4 +8,4 @@ group :test do
 end
 gem 'rspec_junit_formatter'
 
-gem 'rails', git: 'https://github.com/rails/rails', branch: '5-0-stable'
+gem 'rails', '~> 6.1.0'

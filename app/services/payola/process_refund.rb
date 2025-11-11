@@ -11,7 +11,7 @@ module Payola
 
         sale.refund!
       rescue Stripe::InvalidRequestError, Stripe::StripeError, RuntimeError => e
-        sale.errors[:base] << e.message
+        sale.errors.add(:base, e.message)
       end
 
       sale

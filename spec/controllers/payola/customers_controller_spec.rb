@@ -76,7 +76,7 @@ module Payola
           post :update, params: {
             id: customer.id, customer: { default_source: "1234" }
           }
-        end.to raise_error(ActionController::RedirectBackError)
+        end.to raise_error(Payola::ApplicationController::RedirectBackError)
       end
 
     end

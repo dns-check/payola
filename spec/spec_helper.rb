@@ -15,6 +15,9 @@ require 'rspec/rails'
 require 'factory_girl_rails'
 require 'stripe_mock'
 
+# Set Stripe API version to match what Payola was built for
+Stripe.api_version = '2015-02-18'
+
 ENV['STRIPE_SECRET_KEY'] = 'sk_testing123'
 ENV['STRIPE_PUBLISHABLE_KEY'] = 'pk_test123'
 

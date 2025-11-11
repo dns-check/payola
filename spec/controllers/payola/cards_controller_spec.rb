@@ -75,7 +75,7 @@ module Payola
             customer_id: customer.id,
             stripeToken: StripeMock.generate_card_token({})
           }
-        end.to raise_error(ActionController::RedirectBackError)
+        end.to raise_error(Payola::ApplicationController::RedirectBackError)
       end
     end
 
@@ -153,7 +153,7 @@ module Payola
           delete :destroy, params: {
             id: customer.sources.first.id, customer_id: customer.id
           }
-        end.to raise_error(ActionController::RedirectBackError)
+        end.to raise_error(Payola::ApplicationController::RedirectBackError)
       end
 
     end
