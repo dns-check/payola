@@ -16,16 +16,16 @@ Gem::Specification.new do |s|
     f.match(%r{^(test|spec|features)/})
   end
 
-  s.add_dependency "rails", ">= 4.1"
-  s.add_dependency "jquery-rails"
-  s.add_dependency "stripe", ">= 2.8"
-  s.add_dependency "aasm", ">= 4.0.7"
-  s.add_dependency "stripe_event", ">= 2.0.0"
+  s.add_dependency "rails", "~> 8.0.4"
+  s.add_dependency "jquery-rails", "~> 4.6"
+  s.add_dependency "stripe", "~> 8.7.0"
+  s.add_dependency "aasm", "~> 5.5"
+  s.add_dependency "stripe_event", "~> 2.13"
 
-  s.add_development_dependency "sqlite3"
+  s.add_development_dependency "sqlite3", "~> 2.1"
   s.add_development_dependency "rspec-rails"
-  s.add_development_dependency "factory_girl_rails"
-  s.add_development_dependency "stripe-ruby-mock", ">= 2.3.1"
-  s.add_development_dependency "sucker_punch", "~> 1.2.1"
-  s.add_development_dependency "docverter"
+  s.add_development_dependency "factory_bot_rails"
+  s.add_development_dependency "stripe-ruby-mock", "~> 5.0.0"
+  s.add_development_dependency "sucker_punch", ">= 2.0"
+  s.add_development_dependency "ostruct"
 end

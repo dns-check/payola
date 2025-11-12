@@ -5,7 +5,7 @@ module Payola
 
     config.generators do |g|
       g.test_framework :rspec, fixture: false
-      g.fixture_replacement :factory_girl, dir: 'spec/factories'
+      g.fixture_replacement :factory_bot, dir: 'spec/factories'
       g.assets false
       g.helper false
     end
@@ -28,7 +28,8 @@ module Payola
       end
     end
 
-    initializer :configure_subscription_listeners do |app|
+    # Configure subscription listeners after initialization to ensure classes are loaded
+    config.after_initialize do
       Payola.configure do |config|
         config.subscribe 'invoice.payment_succeeded',     Payola::InvoicePaid
         config.subscribe 'invoice.payment_failed',        Payola::InvoiceFailed

@@ -5,13 +5,13 @@ module Payola
       
       begin
         secret_key = Payola.secret_key
-    
+
         charge = Stripe::Charge.retrieve(sale.stripe_id, secret_key)
-        charge.refund
+        Stripe::Refund.create({charge: charge.id}, secret_key)
 
         sale.refund!
       rescue Stripe::InvalidRequestError, Stripe::StripeError, RuntimeError => e
-        sale.errors[:base] << e.message
+        sale.errors.add(:base, e.message)
       end
 
       sale

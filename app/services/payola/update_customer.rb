@@ -2,8 +2,7 @@ module Payola
   class UpdateCustomer
     def self.call(stripe_customer_id, options)
       secret_key = Payola.secret_key
-      customer = Stripe::Customer.retrieve(stripe_customer_id, secret_key)
-      customer.save(options.to_h)
+      Stripe::Customer.update(stripe_customer_id, options.to_h, secret_key)
     end
   end
 end

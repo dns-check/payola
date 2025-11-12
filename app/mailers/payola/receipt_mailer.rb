@@ -14,7 +14,7 @@ module Payola
           pdf = Docverter::Conversion.run do |c|
             c.from = 'html'
             c.to = 'pdf'
-            c.content = render_to_string('payola/receipt_mailer/receipt_pdf.html')
+            c.content = render_to_string('payola/receipt_mailer/receipt_pdf_template')
           end
           attachments["receipt-#{@sale.guid}.pdf"] = pdf
         end

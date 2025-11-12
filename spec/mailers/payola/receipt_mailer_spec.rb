@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'docverter'
 
 module Payola
   describe ReceiptMailer do
@@ -17,7 +16,24 @@ module Payola
 
       it 'should send a receipt with a pdf' do
         Payola.pdf_receipt = true
-        expect(Docverter::Conversion).to receive(:run).and_return('pdf')
+
+        # Mock the Docverter module and class since docverter gem is optional
+        docverter_module = Module.new
+        docverter_conversion = Class.new do
+          def self.run
+            yield self.new
+            'pdf'
+          end
+          def from=(_); end
+          def to=(_); end
+          def content=(_); end
+        end
+        stub_const('Docverter', docverter_module)
+        stub_const('Docverter::Conversion', docverter_conversion)
+
+        # Stub the require call since we've already defined the constants
+        allow_any_instance_of(Payola::ReceiptMailer).to receive(:require).with('docverter').and_return(true)
+
         mail = Payola::ReceiptMailer.receipt(sale.guid)
         expect(mail.attachments["receipt-#{sale.guid}.pdf"]).to_not be nil
       end
