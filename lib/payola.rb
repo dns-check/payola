@@ -31,7 +31,8 @@ module Payola
       :additional_charge_attributes,
       :guid_generator,
       :pdf_receipt,
-      :create_stripe_plans
+      :create_stripe_plans,
+      :stripe_api_version
 
     def configure(&block)
       raise ArgumentError, "must provide a block" unless block_given?
@@ -74,7 +75,8 @@ module Payola
 
     def reset!
       StripeEvent.event_filter = Retriever
-      Stripe.api_version = ENV['STRIPE_API_VERSION'] || '2015-02-18'
+      self.stripe_api_version = ENV['STRIPE_API_VERSION'] || '2015-02-18'
+      Stripe.api_version = self.stripe_api_version
 
       self.background_worker = nil
       self.event_filter = lambda { |event| event }

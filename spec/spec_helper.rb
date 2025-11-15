@@ -16,7 +16,7 @@ require 'factory_bot_rails'
 require 'stripe_mock'
 
 # Set Stripe API version to match what Payola was built for
-Stripe.api_version = '2015-02-18'
+Stripe.api_version = Payola.stripe_api_version
 
 ENV['STRIPE_SECRET_KEY'] = 'sk_testing123'
 ENV['STRIPE_PUBLISHABLE_KEY'] = 'pk_test123'

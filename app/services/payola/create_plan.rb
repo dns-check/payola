@@ -10,7 +10,7 @@ module Payola
       end
 
       # Note: Newer Stripe API versions require a product parameter for plan creation.
-      # The Stripe API version is configured in lib/payola.rb (defaults to 2015-02-18).
+      # The Stripe API version is configured in lib/payola.rb via Payola.stripe_api_version.
       # However, test mocking libraries may enforce newer API requirements regardless of
       # the configured version. This code provides compatibility with both old and new APIs.
       product_id = "prod_#{plan.stripe_id}"
