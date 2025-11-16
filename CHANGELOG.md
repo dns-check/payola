@@ -13,7 +13,7 @@ All notable changes to Payola will be documented in this file.
 - Add support for Ruby 3.4. Previously, only Ruby 2.6 and earlier were supported.
 - Update the `rails` gem from 5.0 to 8.0
 - Update the `stripe` gem from 2.8 to 8.7
-- Update Stripe API version from 2015-02-18 to 2015-07-13
+- Update Stripe API version from 2015-02-18 to 2017-08-15
 - Misc. other gem updates
 - Test suite updates to get everything passing after the above updates
 
