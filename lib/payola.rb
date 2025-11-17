@@ -75,7 +75,7 @@ module Payola
 
     def reset!
       StripeEvent.event_filter = Retriever
-      self.stripe_api_version = ENV['STRIPE_API_VERSION'] || '2017-08-15'
+      self.stripe_api_version = ENV['STRIPE_API_VERSION'] || '2020-03-02'
       Stripe.api_version = self.stripe_api_version
 
       self.background_worker = nil

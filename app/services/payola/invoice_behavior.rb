@@ -13,7 +13,7 @@ module Payola
         subscription = Payola::Subscription.find_by!(stripe_id: invoice.subscription)
         secret_key = Payola.secret_key_for_sale(subscription)
 
-        stripe_sub = Stripe::Customer.retrieve(subscription.stripe_customer_id, secret_key).subscriptions.retrieve(invoice.subscription, secret_key)
+        stripe_sub = Stripe::Subscription.retrieve(invoice.subscription, secret_key)
         subscription.sync_with!(stripe_sub)
 
         sale = create_sale(subscription, invoice)

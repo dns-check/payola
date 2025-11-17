@@ -34,8 +34,7 @@ module Payola
     end
 
     def self.retrieve_subscription_for_customer(subscription, secret_key)
-      customer = Stripe::Customer.retrieve(subscription.stripe_customer_id, secret_key)
-      customer.subscriptions.retrieve(subscription.stripe_id)
+      Stripe::Subscription.retrieve(subscription.stripe_id, secret_key)
     end
 
     def self.should_prorate?(subscription, plan, coupon_code)

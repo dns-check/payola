@@ -18,8 +18,7 @@ module Payola
         before { Payola::ChangeSubscriptionPlan.call(@subscription, @plan2) }
 
         it "should change the plan on the stripe subscription" do
-          customer = Stripe::Customer.retrieve(@subscription.stripe_customer_id)
-          sub = customer.subscriptions.retrieve(@subscription.stripe_id)
+          sub = Stripe::Subscription.retrieve(@subscription.stripe_id)
 
           expect(sub.plan.id).to eq @plan2.stripe_id
         end
