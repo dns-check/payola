@@ -16,6 +16,7 @@ All notable changes to Payola will be documented in this file.
 - Update Stripe API version from 2015-02-18 to 2020-03-02
 - **Improved subscription state handling**: Subscriptions now properly sync their AASM state based on Stripe subscription status via webhooks. This correctly handles new Stripe subscription statuses introduced in API 2019-03-14 (`incomplete`, `incomplete_expired`, `past_due`, `unpaid`, `paused`). The `customer.subscription.updated` webhook now transitions local subscription state to match Stripe's status (e.g., `incomplete_expired` → `errored`, `active` → `active`, `canceled` → `canceled`).
 - **Conditional subscription activation**: `StartSubscription` now only activates subscriptions that Stripe returns with `active` or `trialing` status. Subscriptions with `incomplete` status remain in `processing` state until payment is confirmed via webhook, preventing premature activation of subscriptions with pending payments.
+- **Invoice line item description limit**: As of Stripe API version 2018-10-31, the `description` field on invoice line items has a maximum character length limit of 500 characters. Payola creates invoice items for setup fees in `app/services/payola/start_subscription.rb:121-126`. The description is sourced from `plan.setup_fee_description(subscription)` or defaults to 'Setup Fee'. Applications using custom `setup_fee_description` methods should ensure descriptions do not exceed 500 characters to avoid API errors.
 - Misc. other gem updates
 - Test suite updates to get everything passing after the above updates
 
