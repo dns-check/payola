@@ -14,6 +14,8 @@ All notable changes to Payola will be documented in this file.
 - Update the `rails` gem from 5.0 to 8.0
 - Update the `stripe` gem from 2.8 to 8.7
 - Update Stripe API version from 2015-02-18 to 2020-03-02
+- **Improved subscription state handling**: Subscriptions now properly sync their AASM state based on Stripe subscription status via webhooks. This correctly handles new Stripe subscription statuses introduced in API 2019-03-14 (`incomplete`, `incomplete_expired`, `past_due`, `unpaid`, `paused`). The `customer.subscription.updated` webhook now transitions local subscription state to match Stripe's status (e.g., `incomplete_expired` → `errored`, `active` → `active`, `canceled` → `canceled`).
+- **Conditional subscription activation**: `StartSubscription` now only activates subscriptions that Stripe returns with `active` or `trialing` status. Subscriptions with `incomplete` status remain in `processing` state until payment is confirmed via webhook, preventing premature activation of subscriptions with pending payments.
 - Misc. other gem updates
 - Test suite updates to get everything passing after the above updates
 

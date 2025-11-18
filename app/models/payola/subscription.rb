@@ -108,6 +108,12 @@ module Payola
       # Support for discounts is added to stripe-ruby-mock in v2.2.0, 84f08eb
       self.coupon               = stripe_sub.discount && stripe_sub.discount.coupon.id if stripe_sub.respond_to?(:discount)
 
+      # Sync AASM state based on Stripe subscription status
+      # As of Stripe API 2019-03-14, subscriptions can be created with status
+      # 'incomplete' and transition to 'incomplete_expired' if payment doesn't
+      # complete within 23 hours
+      sync_state_from_stripe_status(stripe_sub.status)
+
       self.save!
       self
     end
@@ -142,6 +148,26 @@ module Payola
         if plan.respond_to?(:trial_period_days) and (plan.trial_period_days.nil? or ( plan.trial_period_days and !(plan.trial_period_days > 0) ))
           errors.add(:base, 'No Stripe token is present for a paid plan') if stripe_token.nil?
         end
+      end
+    end
+
+    # Sync the Payola AASM state based on the Stripe subscription status
+    def sync_state_from_stripe_status(stripe_status)
+      case stripe_status
+      when 'active', 'trialing'
+        activate! if may_activate?
+      when 'canceled'
+        cancel! if may_cancel?
+      when 'incomplete_expired', 'unpaid'
+        # Payment failed and expired, or payment attempts exhausted
+        # Set error message to explain the failure
+        self.error ||= "Subscription payment failed (status: #{stripe_status})"
+        fail! if may_fail?
+      when 'incomplete', 'past_due', 'paused'
+        # Keep in processing state - these are temporary states that may resolve
+        # incomplete: payment processing or requires action
+        # past_due: payment overdue but retrying
+        # paused: trial ended without payment method, awaiting customer to add payment info
       end
     end
 

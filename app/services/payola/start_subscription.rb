@@ -29,6 +29,9 @@ module Payola
         create_params[:coupon] = subscription.coupon if subscription.coupon.present?
         stripe_sub = customer.subscriptions.create(create_params)
 
+        # Note: As of Stripe API 2019-03-14, subscription creation may return status 'incomplete'
+        # if payment processing is still pending. The subscription will transition to 'active' or
+        # 'incomplete_expired' based on the payment outcome, communicated via webhooks.
         subscription.update(
           stripe_id:             stripe_sub.id,
           stripe_customer_id:    customer.id,
@@ -62,7 +65,10 @@ module Payola
           # Unsupported payment type
         end
 
-        subscription.activate!
+        # Activate the subscription if Stripe returned 'active' or 'trialing' status
+        # For 'incomplete' status (API 2019-03-14+), wait for webhook confirmation
+        # before transitioning to active state
+        subscription.activate! if ['active', 'trialing'].include?(stripe_sub.status)
       rescue Stripe::StripeError, RuntimeError => e
         subscription.update(error: e.message)
         subscription.fail!

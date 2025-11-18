@@ -106,5 +106,89 @@ module Payola
         expect(subscription.coupon).to eq coupon.code
       end
     end
+
+    describe "#sync_state_from_stripe_status" do
+      let(:plan) { create(:subscription_plan) }
+      let(:subscription) { create(:subscription, plan: plan, state: 'processing') }
+
+      shared_examples "activates subscription" do |stripe_status|
+        it "should activate a processing subscription" do
+          subscription.sync_state_from_stripe_status(stripe_status)
+          expect(subscription.active?).to be true
+        end
+      end
+
+      shared_examples "keeps subscription in processing state" do |stripe_status|
+        it "should keep subscription in processing state" do
+          subscription.sync_state_from_stripe_status(stripe_status)
+          expect(subscription.processing?).to be true
+        end
+      end
+
+      shared_examples "fails subscription with error message" do |stripe_status|
+        it "should fail a processing subscription and set error message" do
+          subscription.sync_state_from_stripe_status(stripe_status)
+          expect(subscription.errored?).to be true
+          expect(subscription.error).to eq "Subscription payment failed (status: #{stripe_status})"
+        end
+      end
+
+      context "when status is 'active'" do
+        include_examples "activates subscription", 'active'
+      end
+
+      context "when status is 'trialing'" do
+        include_examples "activates subscription", 'trialing'
+      end
+
+      context "when status is 'canceled'" do
+        it "should cancel an active subscription" do
+          subscription.activate!
+          subscription.sync_state_from_stripe_status('canceled')
+          expect(subscription.canceled?).to be true
+        end
+      end
+
+      context "when status is 'incomplete_expired'" do
+        include_examples "fails subscription with error message", 'incomplete_expired'
+      end
+
+      context "when status is 'unpaid'" do
+        include_examples "fails subscription with error message", 'unpaid'
+      end
+
+      context "when status is 'incomplete'" do
+        include_examples "keeps subscription in processing state", 'incomplete'
+      end
+
+      context "when status is 'past_due'" do
+        include_examples "keeps subscription in processing state", 'past_due'
+      end
+
+      context "when status is 'paused'" do
+        include_examples "keeps subscription in processing state", 'paused'
+
+        it "should keep an active subscription in active state" do
+          subscription.activate!
+          subscription.sync_state_from_stripe_status('paused')
+          expect(subscription.active?).to be true
+        end
+      end
+
+      context "when subscription is already in a terminal state" do
+        it "should not transition if already errored" do
+          subscription.fail!
+          subscription.sync_state_from_stripe_status('active')
+          expect(subscription.errored?).to be true
+        end
+
+        it "should not transition if already canceled" do
+          subscription.activate!
+          subscription.cancel!
+          subscription.sync_state_from_stripe_status('active')
+          expect(subscription.canceled?).to be true
+        end
+      end
+    end
   end
 end
