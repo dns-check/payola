@@ -48,7 +48,13 @@ module Payola
         )
 
         method = customer.sources.data.first
-        if method.is_a? Stripe::Card
+        if method.is_a?(Stripe::Source) && method.type == 'card'
+          subscription.update(
+            card_last4:          method.card.last4,
+            card_expiration:     Date.new(method.card.exp_year, method.card.exp_month, 1),
+            card_type:           method.card.brand
+          )
+        elsif method.is_a? Stripe::Card
           card = method
           subscription.update(
             card_last4:          card.last4,
