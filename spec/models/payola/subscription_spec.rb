@@ -64,7 +64,8 @@ module Payola
       it "should sync timestamps" do
         plan = create(:subscription_plan)
         subscription = build(:subscription, plan: plan)
-        stripe_sub = Stripe::Customer.create.subscriptions.create(plan: plan.stripe_id, source: StripeMock.generate_card_token(last4: '1234', exp_year: Time.now.year + 1))
+        customer = Stripe::Customer.create(source: StripeMock.generate_card_token(last4: '1234', exp_year: Time.now.year + 1))
+        stripe_sub = Stripe::Subscription.create(customer: customer.id, items: [{ plan: plan.stripe_id }])
 
         old_start = subscription.current_period_start
         old_end = subscription.current_period_end
@@ -88,7 +89,8 @@ module Payola
       it "should sync non-timestamp fields" do
         plan = create(:subscription_plan, amount: 200)
         subscription = build(:subscription, plan: plan, amount: 50)
-        stripe_sub = Stripe::Customer.create.subscriptions.create(plan: plan.stripe_id, source: StripeMock.generate_card_token(last4: '1234', exp_year: Time.now.year + 1))
+        customer = Stripe::Customer.create(source: StripeMock.generate_card_token(last4: '1234', exp_year: Time.now.year + 1))
+        stripe_sub = Stripe::Subscription.create(customer: customer.id, items: [{ plan: plan.stripe_id }])
         coupon = create(:payola_coupon)
         allow(stripe_sub).to receive_message_chain(:discount, :coupon, :id).and_return(coupon.code)
 
@@ -187,6 +189,45 @@ module Payola
           subscription.cancel!
           subscription.sync_state_from_stripe_status('active')
           expect(subscription.canceled?).to be true
+        end
+      end
+
+      context "when status is unexpected or unknown" do
+        it "should not change state for unknown status" do
+          subscription.sync_state_from_stripe_status('unknown_status')
+          expect(subscription.processing?).to be true
+        end
+
+        it "should not change state for nil status" do
+          subscription.sync_state_from_stripe_status(nil)
+          expect(subscription.processing?).to be true
+        end
+
+        it "should not change state for empty string status" do
+          subscription.sync_state_from_stripe_status('')
+          expect(subscription.processing?).to be true
+        end
+      end
+
+      context "when transition is not allowed from current state" do
+        it "should not activate a canceled subscription" do
+          subscription.activate!
+          subscription.cancel!
+          subscription.sync_state_from_stripe_status('active')
+          expect(subscription.canceled?).to be true
+          expect(subscription.active?).to be false
+        end
+
+        it "should not cancel a pending subscription" do
+          new_subscription = create(:subscription, plan: plan, state: 'pending')
+          new_subscription.sync_state_from_stripe_status('canceled')
+          expect(new_subscription.pending?).to be true
+        end
+
+        it "should not fail an already active subscription" do
+          subscription.activate!
+          subscription.sync_state_from_stripe_status('unpaid')
+          expect(subscription.active?).to be true
         end
       end
     end
