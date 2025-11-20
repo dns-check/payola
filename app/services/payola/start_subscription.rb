@@ -47,29 +47,13 @@ module Payola
           cancel_at_period_end:  stripe_sub.cancel_at_period_end
         )
 
-        method = customer.sources.data.first
-        if method.is_a?(Stripe::Source) && method.type == 'card'
+        card_details = CardDetailsExtractor.extract(customer.sources.data.first)
+        if card_details
           subscription.update(
-            card_last4:          method.card.last4,
-            card_expiration:     Date.new(method.card.exp_year, method.card.exp_month, 1),
-            card_type:           method.card.brand
+            card_last4:      card_details[:last4],
+            card_expiration: CardDetailsExtractor.expiration_date(card_details),
+            card_type:       card_details[:brand]
           )
-        elsif method.is_a? Stripe::Card
-          card = method
-          subscription.update(
-            card_last4:          card.last4,
-            card_expiration:     Date.new(card.exp_year, card.exp_month, 1),
-            card_type:           card.respond_to?(:brand) ? card.brand : card.type,
-          )
-        elsif method.is_a? Stripe::BankAccount
-          bank = method
-          subscription.update(
-            card_last4:          bank.last4,
-            card_expiration:     Date.today + 365,
-            card_type:           bank.bank_name
-          )
-        else
-          # Unsupported payment type
         end
 
         # Activate the subscription if Stripe returned 'active' or 'trialing' status

@@ -51,23 +51,14 @@ module Payola
         fee = balance.fee
       end
 
-      source = charge.source
-      if source.is_a?(Stripe::Source) && source.type == 'card'
-        card_last4      = source.card.last4
-        card_expiration = Date.new(source.card.exp_year, source.card.exp_month, 1)
-        card_type       = source.card.brand
-      else
-        card_last4      = source.last4
-        card_expiration = Date.new(source.exp_year, source.exp_month, 1)
-        card_type       = source.brand
-      end
+      card_details = CardDetailsExtractor.extract(charge.source)
 
       sale.update(
         stripe_id: charge.id,
         stripe_customer_id: customer.id,
-        card_last4: card_last4,
-        card_expiration: card_expiration,
-        card_type: card_type,
+        card_last4: card_details&.dig(:last4),
+        card_expiration: CardDetailsExtractor.expiration_date(card_details),
+        card_type: card_details&.dig(:brand),
         fee_amount: fee
       )
     end

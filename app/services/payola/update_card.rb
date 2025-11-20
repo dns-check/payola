@@ -10,22 +10,14 @@ module Payola
         )
 
         customer = Stripe::Customer.retrieve(subscription.stripe_customer_id, secret_key)
-        card = customer.sources.retrieve(customer.default_source, secret_key)
+        source = customer.sources.retrieve(customer.default_source, secret_key)
 
-        if card.is_a?(Stripe::Source) && card.type == 'card'
-          card_type       = card.card.brand
-          card_last4      = card.card.last4
-          card_expiration = Date.new(card.card.exp_year, card.card.exp_month, 1)
-        else
-          card_type       = card.brand
-          card_last4      = card.last4
-          card_expiration = Date.parse("#{card.exp_year}/#{card.exp_month}/1")
-        end
+        card_details = CardDetailsExtractor.extract(source)
 
         subscription.update(
-          card_type: card_type,
-          card_last4: card_last4,
-          card_expiration: card_expiration
+          card_type: card_details&.dig(:brand),
+          card_last4: card_details&.dig(:last4),
+          card_expiration: CardDetailsExtractor.expiration_date(card_details)
         )
         subscription.save!
       rescue RuntimeError, Stripe::StripeError => e
