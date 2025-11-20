@@ -21,12 +21,32 @@ module Payola
           CancelSubscription.call(@subscription, at_period_end: true)
           expect(@subscription.reload.cancel_at_period_end).to be true
         end
+
+        it "calls Stripe::Subscription.update with cancel_at_period_end parameter" do
+          expect(Stripe::Subscription).to receive(:update).with(
+            @subscription.stripe_id,
+            { cancel_at_period_end: true },
+            anything
+          ).and_call_original
+
+          CancelSubscription.call(@subscription, at_period_end: true)
+        end
       end
 
       context "when at_period_end is not true" do
         it "cancels the subscription immediately" do
           CancelSubscription.call(@subscription)
           expect(@subscription.reload.state).to eq 'canceled'
+        end
+
+        it "calls Stripe::Subscription.cancel" do
+          expect(Stripe::Subscription).to receive(:cancel).with(
+            @subscription.stripe_id,
+            {},
+            anything
+          ).and_call_original
+
+          CancelSubscription.call(@subscription)
         end
       end
 
