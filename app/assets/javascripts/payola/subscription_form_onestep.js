@@ -85,16 +85,17 @@ var PayolaOnestepSubscriptionForm = {
             return;
         }
         var handler = function(data) {
-            if (data.status === "active") {
-                window.location = base_path + '/confirm_subscription/' + guid;
-            } else if (data.status === "errored") {
-                PayolaOnestepSubscriptionForm.showError(form, data.error);
-            } else if (PayolaStripeScA.handleIfIncomplete(data,
-                function() { setTimeout(function() { PayolaOnestepSubscriptionForm.poll(form, 60, guid, base_path); }, 1000); },
-                function(error) { PayolaOnestepSubscriptionForm.showError(form, error); }
-            )) {
-                // 3D Secure authentication initiated
-            } else {
+            if (!PayolaStripeScA.handlePollResponse(data, {
+                onActive: function() {
+                    window.location = base_path + '/confirm_subscription/' + guid;
+                },
+                onError: function(error) {
+                    PayolaOnestepSubscriptionForm.showError(form, error);
+                },
+                onScaSuccess: function() {
+                    setTimeout(function() { PayolaOnestepSubscriptionForm.poll(form, 60, guid, base_path); }, 1000);
+                }
+            })) {
                 setTimeout(function() { PayolaOnestepSubscriptionForm.poll(form, num_retries_left - 1, guid, base_path); }, 500);
             }
         };

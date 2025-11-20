@@ -44,6 +44,23 @@ var PayolaStripeScA = {
                 onSuccess();
             }
         });
+    },
+
+    // Handle poll response with SCA support
+    // Returns true if the response was handled (active, errored, or SCA initiated)
+    // Returns false if polling should continue
+    handlePollResponse: function(data, callbacks) {
+        if (data.status === "active") {
+            callbacks.onActive();
+            return true;
+        } else if (data.status === "errored") {
+            callbacks.onError(data.error);
+            return true;
+        } else if (PayolaStripeScA.handleIfIncomplete(data, callbacks.onScaSuccess, callbacks.onError)) {
+            // 3D Secure authentication initiated
+            return true;
+        }
+        return false;
     }
 };
 

@@ -52,16 +52,19 @@ var PayolaRegistrationForm = {
             return;
         }
         var handler = function(data) {
-            if (data.status === "active") {
-                form.append($('<input type="hidden" name="payola_subscription_guid"></input>').val(guid));
-                form.append(PayolaRegistrationForm.authenticityTokenInput());
-                form.get(0).submit();
-            } else if (PayolaStripeScA.handleIfIncomplete(data,
-                function() { setTimeout(function() { PayolaRegistrationForm.poll(form, 60, guid, base_path); }, 1000); },
-                function(error) { PayolaRegistrationForm.showError(form, error); }
-            )) {
-                // 3D Secure authentication initiated
-            } else {
+            if (!PayolaStripeScA.handlePollResponse(data, {
+                onActive: function() {
+                    form.append($('<input type="hidden" name="payola_subscription_guid"></input>').val(guid));
+                    form.append(PayolaRegistrationForm.authenticityTokenInput());
+                    form.get(0).submit();
+                },
+                onError: function(error) {
+                    PayolaRegistrationForm.showError(form, error);
+                },
+                onScaSuccess: function() {
+                    setTimeout(function() { PayolaRegistrationForm.poll(form, 60, guid, base_path); }, 1000);
+                }
+            })) {
                 setTimeout(function() { PayolaRegistrationForm.poll(form, num_retries_left - 1, guid, base_path); }, 500);
             }
         };
