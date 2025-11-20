@@ -19,9 +19,9 @@
     </div>
     <div style="float: right; margin-right: 8px">
       <label class="control-label">Expiry Date</label>
-      <input style="width: 2em" type="text" size="2" id="exp-month" data-stripe="exp-month" placeholder="MM" pattern="\d*"/>
+      <input style="width: 2em" type="text" size="2" id="exp_month" data-stripe="exp_month" placeholder="MM" pattern="\d*"/>
       <span> / </span>
-      <input style="width: 3em" type="text" size="4" id="exp-year" data-stripe="exp-year" placeholder="YYYY" pattern="\d*"/>
+      <input style="width: 3em" type="text" size="4" id="exp_year" data-stripe="exp_year" placeholder="YYYY" pattern="\d*"/>
     </div>
   </div>
   <div class="row" style="margin-top: 20px">
@@ -53,8 +53,8 @@
 
     $('#number').payment('formatCardNumber');
     $('#cvc').payment('formatCardCVC');
-    $('#exp-month').payment('restrictNumeric');
-    $('#exp-year').payment('restrictNumeric');
+    $('#exp_month').payment('restrictNumeric');
+    $('#exp_year').payment('restrictNumeric');
     $('#number').keyup(function(event) {
       var number = $('#number').val();
       var cardType = $.payment.cardType(number);

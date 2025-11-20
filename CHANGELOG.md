@@ -8,6 +8,7 @@ All notable changes to Payola will be documented in this file.
 
 ### Breaking Changes
 - **Remove docverter development dependency**: The unmaintained `docverter` gem was removed as a development dependency to resolve Ruby 2.7+ compatibility warnings. If you use PDF receipt functionality (`Payola.pdf_receipt = true`), you must now explicitly add `gem 'docverter'` to your application's Gemfile or migrate to an alternative PDF generation system.
+- **Standardize on underscores for expiration date fields**: The `_form.html.erb` partial now uses underscores instead of hyphens for expiration date fields. This includes `data-stripe` attributes (`exp_month`, `exp_year`), `id` attributes, and jQuery selectors. This aligns with Stripe's documentation and JavaScript conventions. If you have custom CSS or JavaScript targeting `#exp-month` or `#exp-year`, update them to use `#exp_month` and `#exp_year`. Similarly, update any custom forms using `data-stripe="exp-month"` to use `data-stripe="exp_month"`.
 
 ### Enhancements
 - Add support for Ruby 3.4. Previously, only Ruby 2.6 and earlier were supported.
