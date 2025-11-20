@@ -92,6 +92,11 @@ var PayolaSubscriptionCheckout = {
                 window.location = options.base_path + "/confirm_subscription/" + guid;
             } else if (data.status === "errored") {
                 PayolaSubscriptionCheckout.showError(data.error, options);
+            } else if (PayolaStripeScA.handleIfIncomplete(data,
+                function() { setTimeout(function() { PayolaSubscriptionCheckout.poll(guid, 60, options); }, 1000); },
+                function(error) { PayolaSubscriptionCheckout.showError(error, options); }
+            )) {
+                // 3D Secure authentication initiated
             } else {
                 setTimeout(function() { PayolaSubscriptionCheckout.poll(guid, num_retries_left - 1, options); }, 500);
             }

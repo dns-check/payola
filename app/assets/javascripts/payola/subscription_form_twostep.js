@@ -48,12 +48,18 @@ var PayolaSubscriptionForm = {
     poll: function(form, num_retries_left, guid, base_path) {
         if (num_retries_left === 0) {
             PayolaSubscriptionForm.showError(form, "This seems to be taking too long. Please contact support and give them transaction ID: " + guid);
+            return;
         }
         var handler = function(data) {
             if (data.status === "active") {
                 form.append($('<input type="hidden" name="payola_subscription_guid"></input>').val(guid));
                 form.append(PayolaSubscriptionForm.authenticityTokenInput());
                 form.get(0).submit();
+            } else if (PayolaStripeScA.handleIfIncomplete(data,
+                function() { setTimeout(function() { PayolaSubscriptionForm.poll(form, 60, guid, base_path); }, 1000); },
+                function(error) { PayolaSubscriptionForm.showError(form, error); }
+            )) {
+                // 3D Secure authentication initiated
             } else {
                 setTimeout(function() { PayolaSubscriptionForm.poll(form, num_retries_left - 1, guid, base_path); }, 500);
             }

@@ -1,7 +1,4 @@
 var PayolaOnestepSubscriptionForm = {
-    // Store the Stripe.js v3 instance for 3D Secure authentication
-    stripeV3: null,
-
     initialize: function() {
         $(document).off('submit.payola-onestep-subscription-form').on(
             'submit.payola-onestep-subscription-form', '.payola-onestep-subscription-form',
@@ -9,12 +6,6 @@ var PayolaOnestepSubscriptionForm = {
                 return PayolaOnestepSubscriptionForm.handleSubmit($(this));
             }
         );
-
-        // Initialize Stripe.js v3 for 3D Secure support
-        // The publishable key is set via Stripe.setPublishableKey() in the page
-        if (typeof Stripe !== 'undefined' && Stripe.key) {
-            PayolaOnestepSubscriptionForm.stripeV3 = Stripe(Stripe.key);
-        }
     },
 
     handleSubmit: function(form) {
@@ -96,9 +87,11 @@ var PayolaOnestepSubscriptionForm = {
         var handler = function(data) {
             if (data.status === "active") {
                 window.location = base_path + '/confirm_subscription/' + guid;
-            } else if (data.stripe_status === "incomplete" && data.client_secret) {
-                // Handle 3D Secure authentication for incomplete subscriptions
-                PayolaOnestepSubscriptionForm.handle3DSecure(form, data.client_secret, guid, base_path);
+            } else if (PayolaStripeScA.handleIfIncomplete(data,
+                function() { setTimeout(function() { PayolaOnestepSubscriptionForm.poll(form, 60, guid, base_path); }, 1000); },
+                function(error) { PayolaOnestepSubscriptionForm.showError(form, error); }
+            )) {
+                // 3D Secure authentication initiated
             } else {
                 setTimeout(function() { PayolaOnestepSubscriptionForm.poll(form, num_retries_left - 1, guid, base_path); }, 500);
             }
@@ -116,37 +109,6 @@ var PayolaOnestepSubscriptionForm = {
                 error: errorHandler
             });
         }
-    },
-
-    // Handle 3D Secure authentication for subscriptions requiring SCA
-    handle3DSecure: function(form, clientSecret, guid, base_path) {
-        var stripe = PayolaOnestepSubscriptionForm.stripeV3;
-
-        if (!stripe) {
-            // Try to initialize Stripe.js v3 if not already done
-            if (typeof Stripe !== 'undefined' && Stripe.key) {
-                stripe = Stripe(Stripe.key);
-                PayolaOnestepSubscriptionForm.stripeV3 = stripe;
-            } else {
-                PayolaOnestepSubscriptionForm.showError(form, "Unable to initialize 3D Secure authentication. Please refresh the page and try again.");
-                return;
-            }
-        }
-
-        // Use confirmCardPayment to handle 3D Secure authentication
-        stripe.confirmCardPayment(clientSecret).then(function(result) {
-            if (result.error) {
-                // Show error to customer
-                PayolaOnestepSubscriptionForm.showError(form, result.error.message);
-            } else {
-                // Payment succeeded or requires no further action
-                // Continue polling to wait for the subscription to become active
-                // The webhook will update the subscription status
-                setTimeout(function() {
-                    PayolaOnestepSubscriptionForm.poll(form, 60, guid, base_path);
-                }, 1000);
-            }
-        });
     },
 
     showError: function(form, message) {

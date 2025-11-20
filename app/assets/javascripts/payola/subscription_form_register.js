@@ -2,7 +2,7 @@ var PayolaRegistrationForm = {
     initialize: function() {
         $(document).off('submit.payola-register-form').on(
             'submit.payola-register-form', '.payola-register-form',
-            function() {
+            function(e) {
                 e.preventDefault();
                 return PayolaRegistrationForm.handleSubmit($(this));
             }
@@ -49,12 +49,18 @@ var PayolaRegistrationForm = {
     poll: function(form, num_retries_left, guid, base_path) {
         if (num_retries_left === 0) {
             PayolaRegistrationForm.showError(form, "This seems to be taking too long. Please contact support and give them transaction ID: " + guid);
+            return;
         }
         var handler = function(data) {
             if (data.status === "active") {
                 form.append($('<input type="hidden" name="payola_subscription_guid"></input>').val(guid));
                 form.append(PayolaRegistrationForm.authenticityTokenInput());
                 form.get(0).submit();
+            } else if (PayolaStripeScA.handleIfIncomplete(data,
+                function() { setTimeout(function() { PayolaRegistrationForm.poll(form, 60, guid, base_path); }, 1000); },
+                function(error) { PayolaRegistrationForm.showError(form, error); }
+            )) {
+                // 3D Secure authentication initiated
             } else {
                 setTimeout(function() { PayolaRegistrationForm.poll(form, num_retries_left - 1, guid, base_path); }, 500);
             }
