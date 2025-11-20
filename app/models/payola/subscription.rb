@@ -93,17 +93,10 @@ module Payola
     end
 
     def sync_with!(stripe_sub)
-      self.current_period_start = Time.at(stripe_sub.current_period_start)
-      self.current_period_end   = Time.at(stripe_sub.current_period_end)
-      self.ended_at             = Time.at(stripe_sub.ended_at) if stripe_sub.ended_at
-      self.trial_start          = Time.at(stripe_sub.trial_start) if stripe_sub.trial_start
-      self.trial_end            = Time.at(stripe_sub.trial_end) if stripe_sub.trial_end
-      self.canceled_at          = Time.at(stripe_sub.canceled_at) if stripe_sub.canceled_at
-      self.quantity             = stripe_sub.quantity
-      self.stripe_status        = stripe_sub.status
+      sync_timestamps_from_stripe(stripe_sub)
+
       self.amount               = stripe_sub.plan.amount
       self.currency             = stripe_sub.plan.respond_to?(:currency) ? stripe_sub.plan.currency : Payola.default_currency
-      self.cancel_at_period_end = stripe_sub.cancel_at_period_end
 
       # Support for discounts is added to stripe-ruby-mock in v2.2.0, 84f08eb
       self.coupon               = stripe_sub.discount && stripe_sub.discount.coupon.id if stripe_sub.respond_to?(:discount)
@@ -116,6 +109,20 @@ module Payola
 
       self.save!
       self
+    end
+
+    # Sync timestamp and status fields from a Stripe subscription object
+    # Used by both initial subscription creation and webhook-triggered syncs
+    def sync_timestamps_from_stripe(stripe_sub)
+      self.current_period_start = Time.at(stripe_sub.current_period_start)
+      self.current_period_end   = Time.at(stripe_sub.current_period_end)
+      self.ended_at             = stripe_sub.ended_at ? Time.at(stripe_sub.ended_at) : nil
+      self.trial_start          = stripe_sub.trial_start ? Time.at(stripe_sub.trial_start) : nil
+      self.trial_end            = stripe_sub.trial_end ? Time.at(stripe_sub.trial_end) : nil
+      self.canceled_at          = stripe_sub.canceled_at ? Time.at(stripe_sub.canceled_at) : nil
+      self.quantity             = stripe_sub.quantity
+      self.stripe_status        = stripe_sub.status
+      self.cancel_at_period_end = stripe_sub.cancel_at_period_end
     end
 
     def to_param

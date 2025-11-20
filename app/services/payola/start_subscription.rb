@@ -33,19 +33,10 @@ module Payola
         # Note: As of Stripe API 2019-03-14, subscription creation may return status 'incomplete'
         # if payment processing is still pending. The subscription will transition to 'active' or
         # 'incomplete_expired' based on the payment outcome, communicated via webhooks.
-        subscription.update(
-          stripe_id:             stripe_sub.id,
-          stripe_customer_id:    customer.id,
-          current_period_start:  Time.at(stripe_sub.current_period_start),
-          current_period_end:    Time.at(stripe_sub.current_period_end),
-          ended_at:              stripe_sub.ended_at ? Time.at(stripe_sub.ended_at) : nil,
-          trial_start:           stripe_sub.trial_start ? Time.at(stripe_sub.trial_start) : nil,
-          trial_end:             stripe_sub.trial_end ? Time.at(stripe_sub.trial_end) : nil,
-          canceled_at:           stripe_sub.canceled_at ? Time.at(stripe_sub.canceled_at) : nil,
-          quantity:              stripe_sub.quantity,
-          stripe_status:         stripe_sub.status,
-          cancel_at_period_end:  stripe_sub.cancel_at_period_end
-        )
+        subscription.stripe_id = stripe_sub.id
+        subscription.stripe_customer_id = customer.id
+        subscription.sync_timestamps_from_stripe(stripe_sub)
+        subscription.save!
 
         card_details = CardDetailsExtractor.extract(customer.sources.data.first)
         if card_details
