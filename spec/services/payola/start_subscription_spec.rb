@@ -164,9 +164,9 @@ module Payola
         it "should activate subscription when Stripe returns 'trialing' status" do
           subscription = create(:subscription, state: 'processing', plan: plan, stripe_token: token)
 
-          allow_any_instance_of(Stripe::ListObject).to receive(:create) do
+          allow(Stripe::Subscription).to receive(:create).and_return(
             mock_stripe_subscription('trialing', plan.amount)
-          end
+          )
 
           StartSubscription.call(subscription)
 
@@ -177,9 +177,9 @@ module Payola
         it "should NOT activate subscription when Stripe returns 'incomplete' status" do
           subscription = create(:subscription, state: 'processing', plan: plan, stripe_token: token)
 
-          allow_any_instance_of(Stripe::ListObject).to receive(:create) do
+          allow(Stripe::Subscription).to receive(:create).and_return(
             mock_stripe_subscription('incomplete', plan.amount)
-          end
+          )
 
           StartSubscription.call(subscription)
 

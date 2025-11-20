@@ -21,13 +21,14 @@ module Payola
         customer = find_or_create_customer
 
         create_params = {
+          customer: customer.id,
           plan: subscription.plan.stripe_id,
           quantity: subscription.quantity,
           tax_percent: subscription.tax_percent
         }
         create_params[:trial_end] = subscription.trial_end.to_i if subscription.trial_end.present?
         create_params[:coupon] = subscription.coupon if subscription.coupon.present?
-        stripe_sub = customer.subscriptions.create(create_params)
+        stripe_sub = Stripe::Subscription.create(create_params, secret_key)
 
         # Note: As of Stripe API 2019-03-14, subscription creation may return status 'incomplete'
         # if payment processing is still pending. The subscription will transition to 'active' or
