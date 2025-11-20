@@ -87,6 +87,8 @@ var PayolaOnestepSubscriptionForm = {
         var handler = function(data) {
             if (data.status === "active") {
                 window.location = base_path + '/confirm_subscription/' + guid;
+            } else if (data.status === "errored") {
+                PayolaOnestepSubscriptionForm.showError(form, data.error);
             } else if (PayolaStripeScA.handleIfIncomplete(data,
                 function() { setTimeout(function() { PayolaOnestepSubscriptionForm.poll(form, 60, guid, base_path); }, 1000); },
                 function(error) { PayolaOnestepSubscriptionForm.showError(form, error); }
