@@ -5,7 +5,7 @@ module Payola
       card_fingerprint = Stripe::Token.retrieve(token, secret_key).try(:card).try(:fingerprint)
       customer = Stripe::Customer.retrieve(stripe_customer_id, secret_key)
 
-      unless customer.sources.select{|source| source.fingerprint == card_fingerprint}.any?
+      unless customer.sources.select{|source| source.respond_to?(:fingerprint) && source.fingerprint == card_fingerprint}.any?
         customer.sources.create(source: token)
       end
     end
