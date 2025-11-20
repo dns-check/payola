@@ -7,7 +7,7 @@ module Payola
       begin
         update_params = {
           plan: plan.stripe_id,
-          prorate: should_prorate?(subscription, plan, coupon_code),
+          proration_behavior: should_prorate?(subscription, plan, coupon_code) ? 'create_prorations' : 'none',
           quantity: quantity
         }
         update_params[:coupon] = coupon_code if coupon_code.present?
