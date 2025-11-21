@@ -149,6 +149,11 @@ module Payola
           subscription.sync_state_from_stripe_status('canceled')
           expect(subscription.canceled?).to be true
         end
+
+        it "should cancel a processing subscription (e.g., incomplete subscription canceled in Stripe)" do
+          subscription.sync_state_from_stripe_status('canceled')
+          expect(subscription.canceled?).to be true
+        end
       end
 
       context "when status is 'incomplete_expired'" do
@@ -222,6 +227,12 @@ module Payola
           new_subscription = create(:subscription, plan: plan, state: 'pending')
           new_subscription.sync_state_from_stripe_status('canceled')
           expect(new_subscription.pending?).to be true
+        end
+
+        it "should cancel a processing subscription" do
+          # Processing subscriptions CAN be canceled (e.g., incomplete subscriptions)
+          subscription.sync_state_from_stripe_status('canceled')
+          expect(subscription.canceled?).to be true
         end
 
         it "should not fail an already active subscription" do

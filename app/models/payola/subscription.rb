@@ -39,7 +39,7 @@ module Payola
       end
 
       event :cancel, after: :instrument_canceled do
-        transitions from: :active, to: :canceled
+        transitions from: [:active, :processing], to: :canceled
       end
 
       event :fail, after: :instrument_fail do
