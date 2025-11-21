@@ -19,7 +19,6 @@ module Payola
           card_last4: card_details&.dig(:last4),
           card_expiration: CardDetailsExtractor.expiration_date(card_details)
         )
-        subscription.save!
       rescue RuntimeError, Stripe::StripeError => e
         subscription.errors.add(:base, e.message)
       end
