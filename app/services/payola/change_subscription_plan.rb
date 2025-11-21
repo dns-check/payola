@@ -33,10 +33,6 @@ module Payola
       subscription
     end
 
-    def self.retrieve_subscription_for_customer(subscription, secret_key)
-      Stripe::Subscription.retrieve(subscription.stripe_id, secret_key)
-    end
-
     def self.should_prorate?(subscription, plan, coupon_code)
       prorate = plan.respond_to?(:should_prorate?) ? plan.should_prorate?(subscription) : true
       prorate = false if coupon_code.present?
