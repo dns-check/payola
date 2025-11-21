@@ -39,7 +39,7 @@ module Payola
       end
 
       event :cancel, after: :instrument_canceled do
-        transitions from: :active, to: :canceled
+        transitions from: [:active, :processing], to: :canceled
       end
 
       event :fail, after: :instrument_fail do
@@ -93,23 +93,36 @@ module Payola
     end
 
     def sync_with!(stripe_sub)
-      self.current_period_start = Time.at(stripe_sub.current_period_start)
-      self.current_period_end   = Time.at(stripe_sub.current_period_end)
-      self.ended_at             = Time.at(stripe_sub.ended_at) if stripe_sub.ended_at
-      self.trial_start          = Time.at(stripe_sub.trial_start) if stripe_sub.trial_start
-      self.trial_end            = Time.at(stripe_sub.trial_end) if stripe_sub.trial_end
-      self.canceled_at          = Time.at(stripe_sub.canceled_at) if stripe_sub.canceled_at
-      self.quantity             = stripe_sub.quantity
-      self.stripe_status        = stripe_sub.status
+      sync_timestamps_from_stripe(stripe_sub)
+
       self.amount               = stripe_sub.plan.amount
       self.currency             = stripe_sub.plan.respond_to?(:currency) ? stripe_sub.plan.currency : Payola.default_currency
-      self.cancel_at_period_end = stripe_sub.cancel_at_period_end
 
       # Support for discounts is added to stripe-ruby-mock in v2.2.0, 84f08eb
       self.coupon               = stripe_sub.discount && stripe_sub.discount.coupon.id if stripe_sub.respond_to?(:discount)
 
+      # Sync AASM state based on Stripe subscription status
+      # As of Stripe API 2019-03-14, subscriptions can be created with status
+      # 'incomplete' and transition to 'incomplete_expired' if payment doesn't
+      # complete within 23 hours
+      sync_state_from_stripe_status(stripe_sub.status)
+
       self.save!
       self
+    end
+
+    # Sync timestamp and status fields from a Stripe subscription object
+    # Used by both initial subscription creation and webhook-triggered syncs
+    def sync_timestamps_from_stripe(stripe_sub)
+      self.current_period_start = Time.at(stripe_sub.current_period_start)
+      self.current_period_end   = Time.at(stripe_sub.current_period_end)
+      self.ended_at             = stripe_sub.ended_at ? Time.at(stripe_sub.ended_at) : nil
+      self.trial_start          = stripe_sub.trial_start ? Time.at(stripe_sub.trial_start) : nil
+      self.trial_end            = stripe_sub.trial_end ? Time.at(stripe_sub.trial_end) : nil
+      self.canceled_at          = stripe_sub.canceled_at ? Time.at(stripe_sub.canceled_at) : nil
+      self.quantity             = stripe_sub.quantity
+      self.stripe_status        = stripe_sub.status
+      self.cancel_at_period_end = stripe_sub.cancel_at_period_end
     end
 
     def to_param
@@ -142,6 +155,26 @@ module Payola
         if plan.respond_to?(:trial_period_days) and (plan.trial_period_days.nil? or ( plan.trial_period_days and !(plan.trial_period_days > 0) ))
           errors.add(:base, 'No Stripe token is present for a paid plan') if stripe_token.nil?
         end
+      end
+    end
+
+    # Sync the Payola AASM state based on the Stripe subscription status
+    def sync_state_from_stripe_status(stripe_status)
+      case stripe_status
+      when 'active', 'trialing'
+        activate! if may_activate?
+      when 'canceled'
+        cancel! if may_cancel?
+      when 'incomplete_expired', 'unpaid'
+        # Payment failed and expired, or payment attempts exhausted
+        # Set error message to explain the failure
+        self.error ||= "Subscription payment failed (status: #{stripe_status})"
+        fail! if may_fail?
+      when 'incomplete', 'past_due', 'paused'
+        # Keep in processing state - these are temporary states that may resolve
+        # incomplete: payment processing or requires action
+        # past_due: payment overdue but retrying
+        # paused: trial ended without payment method, awaiting customer to add payment info
       end
     end
 

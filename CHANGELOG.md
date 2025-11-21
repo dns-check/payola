@@ -8,12 +8,24 @@ All notable changes to Payola will be documented in this file.
 
 ### Breaking Changes
 - **Remove docverter development dependency**: The unmaintained `docverter` gem was removed as a development dependency to resolve Ruby 2.7+ compatibility warnings. If you use PDF receipt functionality (`Payola.pdf_receipt = true`), you must now explicitly add `gem 'docverter'` to your application's Gemfile or migrate to an alternative PDF generation system.
+- **Standardize on underscores for expiration date fields**: The `_form.html.erb` partial now uses underscores instead of hyphens for expiration date fields. This includes `data-stripe` attributes (`exp_month`, `exp_year`), `id` attributes, and jQuery selectors. This aligns with Stripe's documentation and JavaScript conventions. If you have custom CSS or JavaScript targeting `#exp-month` or `#exp-year`, update them to use `#exp_month` and `#exp_year`. Similarly, update any custom forms using `data-stripe="exp-month"` to use `data-stripe="exp_month"`.
+
+### Deprecated Stripe API Removals
+- **Replace `at_period_end` with `cancel_at_period_end`**: The `at_period_end` parameter was removed from the Stripe subscription cancel endpoint in API version 2018-08-23. `CancelSubscription` now uses `Stripe::Subscription.update` with `cancel_at_period_end: true` instead of passing `at_period_end` to the cancel endpoint.
+- **Replace `prorate` with `proration_behavior`**: The deprecated `prorate` parameter in `ChangeSubscriptionPlan` has been replaced with `proration_behavior`, which accepts `'create_prorations'` or `'none'`.
+- **Replace `customer.subscriptions.create()` with `Stripe::Subscription.create()`**: Subscription creation now uses the top-level `Stripe::Subscription.create()` API instead of the deprecated customer-nested endpoint.
 
 ### Enhancements
 - Add support for Ruby 3.4. Previously, only Ruby 2.6 and earlier were supported.
 - Update the `rails` gem from 5.0 to 8.0
 - Update the `stripe` gem from 2.8 to 8.7
-- Update Stripe API version from 2015-02-18 to 2017-08-15
+- Update Stripe API version from 2015-02-18 to 2020-03-02
+- **Allow canceling subscriptions in `processing` state**: Subscriptions with `stripe_status: "incomplete"` (SCA/3D Secure pending) can now be canceled. Previously, the AASM state machine only allowed the `cancel` event from `active` state, but incomplete subscriptions remain in `processing` state. This affected users who wanted to cancel a subscription during the 23-hour window before Stripe auto-expires it.
+- **Improved subscription state handling**: Subscriptions now properly sync their AASM state based on Stripe subscription status via webhooks. This correctly handles new Stripe subscription statuses introduced in API 2019-03-14 (`incomplete`, `incomplete_expired`, `past_due`, `unpaid`, `paused`). The `customer.subscription.updated` webhook now transitions local subscription state to match Stripe's status (e.g., `incomplete_expired` → `errored`, `active` → `active`, `canceled` → `canceled`).
+- **Conditional subscription activation**: `StartSubscription` now only activates subscriptions that Stripe returns with `active` or `trialing` status. Subscriptions with `incomplete` status remain in `processing` state until payment is confirmed via webhook, preventing premature activation of subscriptions with pending payments.
+- **3D Secure (SCA) authentication support**: Subscriptions requiring Strong Customer Authentication now automatically trigger 3D Secure authentication in the browser. When a subscription is created with `incomplete` status (payment requires authentication), the JavaScript polling detects this and uses Stripe.js v3 `confirmCardPayment()` to display the 3D Secure modal. After successful authentication, the subscription is activated. This enables compliance with PSD2/SCA requirements for European customers. Note: Your application must include Stripe.js v3 and set `Stripe.key` to your publishable key (the `_stripe_header` partial does this automatically).
+- **Invoice line item description limit**: As of Stripe API version 2018-10-31, the `description` field on invoice line items has a maximum character length limit of 500 characters. Payola creates invoice items for setup fees in `app/services/payola/start_subscription.rb:121-126`. The description is sourced from `plan.setup_fee_description(subscription)` or defaults to 'Setup Fee'. Applications using custom `setup_fee_description` methods should ensure descriptions do not exceed 500 characters to avoid API errors.
+- **Improved bank account (ACH) payment support**: Payment method details (`card_last4`, `card_type`, `card_expiration`) are now correctly populated for bank account payments across all services (`ChargeCard`, `InvoicePaid`, `InvoiceFailed`, `UpdateCard`). Previously only `StartSubscription` handled bank accounts; now all payment flows consistently store bank name as `card_type` and last 4 digits of account number as `card_last4`. Note: This functionality is untested and may have issues.
 - Misc. other gem updates
 - Test suite updates to get everything passing after the above updates
 

@@ -120,6 +120,76 @@ module Payola
         expect(ii.amount).to eq 100
         expect(ii.description).to eq 'Random Mystery Fee'
       end
+
+      describe "subscription activation based on Stripe status (API 2019-03-14+)" do
+        let(:plan) { create(:subscription_plan) }
+
+        # Helper method to create a mock Stripe subscription with specified status
+        def mock_stripe_subscription(status, plan_amount)
+          base_attrs = {
+            id: 'sub_test123',
+            status: status,
+            customer: 'cus_test123',
+            current_period_start: Time.now.to_i,
+            current_period_end: (Time.now + 30.days).to_i,
+            ended_at: nil,
+            canceled_at: nil,
+            quantity: 1,
+            cancel_at_period_end: false,
+            plan: double('Plan', amount: plan_amount, currency: 'usd')
+          }
+
+          # Add trial fields for trialing status
+          if status == 'trialing'
+            base_attrs[:trial_start] = Time.now.to_i
+            base_attrs[:trial_end] = (Time.now + 14.days).to_i
+          else
+            base_attrs[:trial_start] = nil
+            base_attrs[:trial_end] = nil
+          end
+
+          double('Stripe::Subscription', base_attrs)
+        end
+
+        it "should activate subscription when Stripe returns 'active' status" do
+          subscription = create(:subscription, state: 'processing', plan: plan, stripe_token: token)
+
+          allow(Stripe::Subscription).to receive(:create).and_return(
+            mock_stripe_subscription('active', plan.amount)
+          )
+
+          StartSubscription.call(subscription)
+
+          expect(subscription.reload.active?).to be true
+          expect(subscription.reload.stripe_status).to eq 'active'
+        end
+
+        it "should activate subscription when Stripe returns 'trialing' status" do
+          subscription = create(:subscription, state: 'processing', plan: plan, stripe_token: token)
+
+          allow(Stripe::Subscription).to receive(:create).and_return(
+            mock_stripe_subscription('trialing', plan.amount)
+          )
+
+          StartSubscription.call(subscription)
+
+          expect(subscription.reload.active?).to be true
+          expect(subscription.reload.stripe_status).to eq 'trialing'
+        end
+
+        it "should NOT activate subscription when Stripe returns 'incomplete' status" do
+          subscription = create(:subscription, state: 'processing', plan: plan, stripe_token: token)
+
+          allow(Stripe::Subscription).to receive(:create).and_return(
+            mock_stripe_subscription('incomplete', plan.amount)
+          )
+
+          StartSubscription.call(subscription)
+
+          expect(subscription.reload.processing?).to be true
+          expect(subscription.reload.stripe_status).to eq 'incomplete'
+        end
+      end
     end
   end
 end

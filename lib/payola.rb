@@ -47,7 +47,8 @@ module Payola
       return publishable_key_retriever.call(sale).to_s
     end
 
-    def subscribe(name, callable = Proc.new)
+    def subscribe(name, callable = nil, &block)
+      callable ||= block
       StripeEvent.subscribe(name, callable)
     end
 
@@ -55,7 +56,8 @@ module Payola
       StripeEvent.backend.instrument(StripeEvent.namespace.call(name), object)
     end
 
-    def all(callable = Proc.new)
+    def all(callable = nil, &block)
+      callable ||= block
       StripeEvent.all(callable)
     end
 
@@ -75,7 +77,7 @@ module Payola
 
     def reset!
       StripeEvent.event_filter = Retriever
-      self.stripe_api_version = ENV['STRIPE_API_VERSION'] || '2017-08-15'
+      self.stripe_api_version = ENV['STRIPE_API_VERSION'] || '2020-03-02'
       Stripe.api_version = self.stripe_api_version
 
       self.background_worker = nil

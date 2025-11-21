@@ -13,7 +13,7 @@ module Payola
         subscription = Payola::Subscription.find_by!(stripe_id: invoice.subscription)
         secret_key = Payola.secret_key_for_sale(subscription)
 
-        stripe_sub = Stripe::Customer.retrieve(subscription.stripe_customer_id, secret_key).subscriptions.retrieve(invoice.subscription, secret_key)
+        stripe_sub = Stripe::Subscription.retrieve(invoice.subscription, secret_key)
         subscription.sync_with!(stripe_sub)
 
         sale = create_sale(subscription, invoice)
@@ -38,9 +38,13 @@ module Payola
       end
 
       def update_sale_with_charge(sale, charge, secret_key)
-        sale.stripe_id  = charge.id
-        sale.card_type  = charge.source.brand
-        sale.card_last4 = charge.source.last4
+        sale.stripe_id = charge.id
+
+        card_details = CardDetailsExtractor.extract(charge.source)
+        if card_details
+          sale.card_type  = card_details[:brand]
+          sale.card_last4 = card_details[:last4]
+        end
 
         if charge.respond_to?(:fee)
           sale.fee_amount = charge.fee

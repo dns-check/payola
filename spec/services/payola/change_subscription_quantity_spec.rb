@@ -28,8 +28,7 @@ module Payola
       it "should change the quantity on the stripe subscription" do
         subscription = Payola::ChangeSubscriptionQuantity.call(@subscription, new_quantity)
 
-        customer = Stripe::Customer.retrieve(subscription.stripe_customer_id)
-        sub = customer.subscriptions.retrieve(subscription.stripe_id)
+        sub = Stripe::Subscription.retrieve(subscription.stripe_id)
         expect(sub.quantity).to eq new_quantity
       end
 

@@ -7,7 +7,7 @@ module Payola
       begin
         update_params = {
           plan: plan.stripe_id,
-          prorate: should_prorate?(subscription, plan, coupon_code),
+          proration_behavior: should_prorate?(subscription, plan, coupon_code) ? 'create_prorations' : 'none',
           quantity: quantity
         }
         update_params[:coupon] = coupon_code if coupon_code.present?
@@ -31,11 +31,6 @@ module Payola
       end
 
       subscription
-    end
-
-    def self.retrieve_subscription_for_customer(subscription, secret_key)
-      customer = Stripe::Customer.retrieve(subscription.stripe_customer_id, secret_key)
-      customer.subscriptions.retrieve(subscription.stripe_id)
     end
 
     def self.should_prorate?(subscription, plan, coupon_code)

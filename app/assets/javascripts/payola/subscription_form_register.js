@@ -2,7 +2,7 @@ var PayolaRegistrationForm = {
     initialize: function() {
         $(document).off('submit.payola-register-form').on(
             'submit.payola-register-form', '.payola-register-form',
-            function() {
+            function(e) {
                 e.preventDefault();
                 return PayolaRegistrationForm.handleSubmit($(this));
             }
@@ -49,13 +49,22 @@ var PayolaRegistrationForm = {
     poll: function(form, num_retries_left, guid, base_path) {
         if (num_retries_left === 0) {
             PayolaRegistrationForm.showError(form, "This seems to be taking too long. Please contact support and give them transaction ID: " + guid);
+            return;
         }
         var handler = function(data) {
-            if (data.status === "active") {
-                form.append($('<input type="hidden" name="payola_subscription_guid"></input>').val(guid));
-                form.append(PayolaRegistrationForm.authenticityTokenInput());
-                form.get(0).submit();
-            } else {
+            if (!PayolaStripeSCA.handlePollResponse(data, {
+                onActive: function() {
+                    form.append($('<input type="hidden" name="payola_subscription_guid"></input>').val(guid));
+                    form.append(PayolaRegistrationForm.authenticityTokenInput());
+                    form.get(0).submit();
+                },
+                onError: function(error) {
+                    PayolaRegistrationForm.showError(form, error);
+                },
+                onScaSuccess: function() {
+                    setTimeout(function() { PayolaRegistrationForm.poll(form, 60, guid, base_path); }, 1000);
+                }
+            })) {
                 setTimeout(function() { PayolaRegistrationForm.poll(form, num_retries_left - 1, guid, base_path); }, 500);
             }
         };
@@ -77,7 +86,9 @@ var PayolaRegistrationForm = {
 
     showError: function(form, message) {
         $('.payola-spinner').hide();
-        $(form).find(':submit').prop('disabled', false);
+        $(form).find(':submit')
+               .prop('disabled', false)
+               .trigger('error', message);
         var error_selector = form.data('payola-error-selector');
         if (error_selector) {
             $(error_selector).text(message);

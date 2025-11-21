@@ -21,48 +21,36 @@ module Payola
         customer = find_or_create_customer
 
         create_params = {
+          customer: customer.id,
           plan: subscription.plan.stripe_id,
           quantity: subscription.quantity,
           tax_percent: subscription.tax_percent
         }
         create_params[:trial_end] = subscription.trial_end.to_i if subscription.trial_end.present?
         create_params[:coupon] = subscription.coupon if subscription.coupon.present?
-        stripe_sub = customer.subscriptions.create(create_params)
+        stripe_sub = Stripe::Subscription.create(create_params, secret_key)
 
-        subscription.update(
-          stripe_id:             stripe_sub.id,
-          stripe_customer_id:    customer.id,
-          current_period_start:  Time.at(stripe_sub.current_period_start),
-          current_period_end:    Time.at(stripe_sub.current_period_end),
-          ended_at:              stripe_sub.ended_at ? Time.at(stripe_sub.ended_at) : nil,
-          trial_start:           stripe_sub.trial_start ? Time.at(stripe_sub.trial_start) : nil,
-          trial_end:             stripe_sub.trial_end ? Time.at(stripe_sub.trial_end) : nil,
-          canceled_at:           stripe_sub.canceled_at ? Time.at(stripe_sub.canceled_at) : nil,
-          quantity:              stripe_sub.quantity,
-          stripe_status:         stripe_sub.status,
-          cancel_at_period_end:  stripe_sub.cancel_at_period_end
-        )
+        # Note: As of Stripe API 2019-03-14, subscription creation may return status 'incomplete'
+        # if payment processing is still pending. The subscription will transition to 'active' or
+        # 'incomplete_expired' based on the payment outcome, communicated via webhooks.
+        subscription.stripe_id = stripe_sub.id
+        subscription.stripe_customer_id = customer.id
+        subscription.sync_timestamps_from_stripe(stripe_sub)
+        subscription.save!
 
-        method = customer.sources.data.first
-        if method.is_a? Stripe::Card
-          card = method
+        card_details = CardDetailsExtractor.extract(customer.sources.data.first)
+        if card_details
           subscription.update(
-            card_last4:          card.last4,
-            card_expiration:     Date.new(card.exp_year, card.exp_month, 1),
-            card_type:           card.respond_to?(:brand) ? card.brand : card.type,
+            card_last4:      card_details[:last4],
+            card_expiration: CardDetailsExtractor.expiration_date(card_details),
+            card_type:       card_details[:brand]
           )
-        elsif method.is_a? Stripe::BankAccount
-          bank = method
-          subscription.update(
-            card_last4:          bank.last4,
-            card_expiration:     Date.today + 365,
-            card_type:           bank.bank_name
-          )
-        else
-          # Unsupported payment type
         end
 
-        subscription.activate!
+        # Activate the subscription if Stripe returned 'active' or 'trialing' status
+        # For 'incomplete' status (API 2019-03-14+), wait for webhook confirmation
+        # before transitioning to active state
+        subscription.activate! if ['active', 'trialing'].include?(stripe_sub.status)
       rescue Stripe::StripeError, RuntimeError => e
         subscription.update(error: e.message)
         subscription.fail!

@@ -86,6 +86,79 @@ module Payola
         expect(parsed_body['status']).to eq subscription.state
         expect(parsed_body['error']).to be_nil
       end
+
+      context "with incomplete subscription requiring 3D Secure" do
+        let(:subscription) { create(:subscription, state: 'processing', stripe_status: 'incomplete', stripe_id: 'sub_123') }
+
+        it "should include stripe_status and client_secret for incomplete subscriptions" do
+          payment_intent = double('payment_intent', client_secret: 'pi_secret_123')
+          latest_invoice = double('latest_invoice', payment_intent: payment_intent)
+          stripe_sub = double('stripe_subscription', latest_invoice: latest_invoice)
+
+          allow(Stripe::Subscription).to receive(:retrieve).and_return(stripe_sub)
+
+          get :status, params: { guid: subscription.guid }
+
+          expect(response.status).to eq 200
+          parsed_body = JSON.load(response.body)
+
+          expect(parsed_body['guid']).to eq subscription.guid
+          expect(parsed_body['status']).to eq 'processing'
+          expect(parsed_body['stripe_status']).to eq 'incomplete'
+          expect(parsed_body['client_secret']).to eq 'pi_secret_123'
+        end
+
+        it "should handle Stripe API errors gracefully" do
+          allow(Stripe::Subscription).to receive(:retrieve).and_raise(Stripe::StripeError.new('API error'))
+
+          get :status, params: { guid: subscription.guid }
+
+          expect(response.status).to eq 200
+          parsed_body = JSON.load(response.body)
+
+          expect(parsed_body['guid']).to eq subscription.guid
+          expect(parsed_body['stripe_status']).to eq 'incomplete'
+          expect(parsed_body['client_secret']).to be_nil
+        end
+
+        it "should handle missing payment intent" do
+          latest_invoice = double('latest_invoice', payment_intent: nil)
+          stripe_sub = double('stripe_subscription', latest_invoice: latest_invoice)
+
+          allow(Stripe::Subscription).to receive(:retrieve).and_return(stripe_sub)
+
+          get :status, params: { guid: subscription.guid }
+
+          expect(response.status).to eq 200
+          parsed_body = JSON.load(response.body)
+
+          expect(parsed_body['stripe_status']).to eq 'incomplete'
+          expect(parsed_body['client_secret']).to be_nil
+        end
+
+        it "should handle missing stripe_id" do
+          subscription.update(stripe_id: nil)
+
+          get :status, params: { guid: subscription.guid }
+
+          expect(response.status).to eq 200
+          parsed_body = JSON.load(response.body)
+
+          expect(parsed_body['stripe_status']).to eq 'incomplete'
+          expect(parsed_body['client_secret']).to be_nil
+        end
+      end
+
+      it "should not include stripe_status for non-incomplete subscriptions" do
+        subscription = create(:subscription, state: 'active', stripe_status: 'active')
+        get :status, params: { guid: subscription.guid }
+
+        expect(response.status).to eq 200
+        parsed_body = JSON.load(response.body)
+
+        expect(parsed_body).not_to have_key('stripe_status')
+        expect(parsed_body).not_to have_key('client_secret')
+      end
     end
 
     describe '#show' do

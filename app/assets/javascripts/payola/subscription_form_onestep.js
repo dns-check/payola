@@ -27,14 +27,15 @@ var PayolaOnestepSubscriptionForm = {
             PayolaOnestepSubscriptionForm.showError(form, 'The card number is not a valid credit card number.');
             return false;
         }
+        var expValid;
         if ($("[data-stripe='exp']").length){
-            var valid = !Stripe.card.validateExpiry($("[data-stripe='exp']").val());
+            expValid = Stripe.card.validateExpiry($("[data-stripe='exp']").val());
         }else{
             var expMonth = $("[data-stripe='exp_month']").val();
             var expYear = $("[data-stripe='exp_year']").val();
-            var valid = !Stripe.card.validateExpiry(expMonth, expYear);
+            expValid = Stripe.card.validateExpiry(expMonth, expYear);
         }
-        if (valid) {
+        if (!expValid) {
             PayolaOnestepSubscriptionForm.showError(form, "Your card's expiration month/year is invalid.");
             return false;
         }
@@ -82,18 +83,27 @@ var PayolaOnestepSubscriptionForm = {
     poll: function(form, num_retries_left, guid, base_path) {
         if (num_retries_left === 0) {
             PayolaOnestepSubscriptionForm.showError(form, "This seems to be taking too long. Please contact support and give them transaction ID: " + guid);
+            return;
         }
         var handler = function(data) {
-            if (data.status === "active") {
-                window.location = base_path + '/confirm_subscription/' + guid;
-            } else {
+            if (!PayolaStripeSCA.handlePollResponse(data, {
+                onActive: function() {
+                    window.location = base_path + '/confirm_subscription/' + guid;
+                },
+                onError: function(error) {
+                    PayolaOnestepSubscriptionForm.showError(form, error);
+                },
+                onScaSuccess: function() {
+                    setTimeout(function() { PayolaOnestepSubscriptionForm.poll(form, 60, guid, base_path); }, 1000);
+                }
+            })) {
                 setTimeout(function() { PayolaOnestepSubscriptionForm.poll(form, num_retries_left - 1, guid, base_path); }, 500);
             }
         };
         var errorHandler = function(jqXHR){
             PayolaOnestepSubscriptionForm.showError(form, jQuery.parseJSON(jqXHR.responseText).error);
         };
-        
+
         if (typeof guid != 'undefined') {
             $.ajax({
                 type: 'GET',

@@ -64,7 +64,8 @@ module Payola
       it "should sync timestamps" do
         plan = create(:subscription_plan)
         subscription = build(:subscription, plan: plan)
-        stripe_sub = Stripe::Customer.create.subscriptions.create(plan: plan.stripe_id, source: StripeMock.generate_card_token(last4: '1234', exp_year: Time.now.year + 1))
+        customer = Stripe::Customer.create(source: StripeMock.generate_card_token(last4: '1234', exp_year: Time.now.year + 1))
+        stripe_sub = Stripe::Subscription.create(customer: customer.id, items: [{ plan: plan.stripe_id }])
 
         old_start = subscription.current_period_start
         old_end = subscription.current_period_end
@@ -88,7 +89,8 @@ module Payola
       it "should sync non-timestamp fields" do
         plan = create(:subscription_plan, amount: 200)
         subscription = build(:subscription, plan: plan, amount: 50)
-        stripe_sub = Stripe::Customer.create.subscriptions.create(plan: plan.stripe_id, source: StripeMock.generate_card_token(last4: '1234', exp_year: Time.now.year + 1))
+        customer = Stripe::Customer.create(source: StripeMock.generate_card_token(last4: '1234', exp_year: Time.now.year + 1))
+        stripe_sub = Stripe::Subscription.create(customer: customer.id, items: [{ plan: plan.stripe_id }])
         coupon = create(:payola_coupon)
         allow(stripe_sub).to receive_message_chain(:discount, :coupon, :id).and_return(coupon.code)
 
@@ -104,6 +106,132 @@ module Payola
         expect(subscription.stripe_status).to eq 'active'
         expect(subscription.cancel_at_period_end).to eq true
         expect(subscription.coupon).to eq coupon.code
+      end
+    end
+
+    describe "#sync_state_from_stripe_status" do
+      let(:plan) { create(:subscription_plan) }
+      let(:subscription) { create(:subscription, plan: plan, state: 'processing') }
+
+      shared_examples "activates subscription" do |stripe_status|
+        it "should activate a processing subscription" do
+          subscription.sync_state_from_stripe_status(stripe_status)
+          expect(subscription.active?).to be true
+        end
+      end
+
+      shared_examples "keeps subscription in processing state" do |stripe_status|
+        it "should keep subscription in processing state" do
+          subscription.sync_state_from_stripe_status(stripe_status)
+          expect(subscription.processing?).to be true
+        end
+      end
+
+      shared_examples "fails subscription with error message" do |stripe_status|
+        it "should fail a processing subscription and set error message" do
+          subscription.sync_state_from_stripe_status(stripe_status)
+          expect(subscription.errored?).to be true
+          expect(subscription.error).to eq "Subscription payment failed (status: #{stripe_status})"
+        end
+      end
+
+      context "when status is 'active'" do
+        include_examples "activates subscription", 'active'
+      end
+
+      context "when status is 'trialing'" do
+        include_examples "activates subscription", 'trialing'
+      end
+
+      context "when status is 'canceled'" do
+        it "should cancel an active subscription" do
+          subscription.activate!
+          subscription.sync_state_from_stripe_status('canceled')
+          expect(subscription.canceled?).to be true
+        end
+
+        it "should cancel a processing subscription (e.g., incomplete subscription canceled in Stripe)" do
+          subscription.sync_state_from_stripe_status('canceled')
+          expect(subscription.canceled?).to be true
+        end
+      end
+
+      context "when status is 'incomplete_expired'" do
+        include_examples "fails subscription with error message", 'incomplete_expired'
+      end
+
+      context "when status is 'unpaid'" do
+        include_examples "fails subscription with error message", 'unpaid'
+      end
+
+      context "when status is 'incomplete'" do
+        include_examples "keeps subscription in processing state", 'incomplete'
+      end
+
+      context "when status is 'past_due'" do
+        include_examples "keeps subscription in processing state", 'past_due'
+      end
+
+      context "when status is 'paused'" do
+        include_examples "keeps subscription in processing state", 'paused'
+
+        it "should keep an active subscription in active state" do
+          subscription.activate!
+          subscription.sync_state_from_stripe_status('paused')
+          expect(subscription.active?).to be true
+        end
+      end
+
+      context "when subscription is already in a terminal state" do
+        it "should not transition if already errored" do
+          subscription.fail!
+          subscription.sync_state_from_stripe_status('active')
+          expect(subscription.errored?).to be true
+        end
+
+        it "should not transition if already canceled" do
+          subscription.activate!
+          subscription.cancel!
+          subscription.sync_state_from_stripe_status('active')
+          expect(subscription.canceled?).to be true
+        end
+      end
+
+      context "when status is unexpected or unknown" do
+        it "should not change state for unknown status" do
+          subscription.sync_state_from_stripe_status('unknown_status')
+          expect(subscription.processing?).to be true
+        end
+
+        it "should not change state for nil status" do
+          subscription.sync_state_from_stripe_status(nil)
+          expect(subscription.processing?).to be true
+        end
+
+        it "should not change state for empty string status" do
+          subscription.sync_state_from_stripe_status('')
+          expect(subscription.processing?).to be true
+        end
+      end
+
+      context "when transition is not allowed from current state" do
+        it "should not cancel a pending subscription" do
+          new_subscription = create(:subscription, plan: plan, state: 'pending')
+          new_subscription.sync_state_from_stripe_status('canceled')
+          expect(new_subscription.pending?).to be true
+        end
+
+        it "should cancel a processing subscription" do
+          # Processing subscriptions CAN be canceled (e.g., incomplete subscriptions)
+          subscription.sync_state_from_stripe_status('canceled')
+          expect(subscription.canceled?).to be true
+        end
+
+        it "should not fail an already active subscription" do
+          subscription.activate!
+          subscription.sync_state_from_stripe_status('unpaid')
+          expect(subscription.active?).to be true
+        end
       end
     end
   end

@@ -88,11 +88,17 @@ var PayolaSubscriptionCheckout = {
         }
 
         var handler = function(data) {
-            if (data.status === "active") {
-                window.location = options.base_path + "/confirm_subscription/" + guid;
-            } else if (data.status === "errored") {
-                PayolaSubscriptionCheckout.showError(data.error, options);
-            } else {
+            if (!PayolaStripeSCA.handlePollResponse(data, {
+                onActive: function() {
+                    window.location = options.base_path + "/confirm_subscription/" + guid;
+                },
+                onError: function(error) {
+                    PayolaSubscriptionCheckout.showError(error, options);
+                },
+                onScaSuccess: function() {
+                    setTimeout(function() { PayolaSubscriptionCheckout.poll(guid, 60, options); }, 1000);
+                }
+            })) {
                 setTimeout(function() { PayolaSubscriptionCheckout.poll(guid, num_retries_left - 1, options); }, 500);
             }
         };
