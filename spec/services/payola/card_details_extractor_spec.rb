@@ -84,7 +84,7 @@ module Payola
       end
 
       context "with Stripe::BankAccount" do
-        it "extracts bank account details with synthetic expiration" do
+        it "extracts bank account details with nil expiration" do
           bank_account = double('Stripe::BankAccount',
             is_a?: false,
             last4: '6789',
@@ -98,8 +98,8 @@ module Payola
 
           expect(result[:last4]).to eq '6789'
           expect(result[:brand]).to eq 'Chase'
-          expect(result[:exp_year]).to eq Date.today.year + 1
-          expect(result[:exp_month]).to eq Date.today.month
+          expect(result[:exp_year]).to be_nil
+          expect(result[:exp_month]).to be_nil
         end
       end
 

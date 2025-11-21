@@ -22,8 +22,8 @@ module Payola
       elsif source.is_a?(Stripe::BankAccount)
         {
           last4: source.last4,
-          exp_year: Date.today.year + 1,
-          exp_month: Date.today.month,
+          exp_year: nil,
+          exp_month: nil,
           brand: source.bank_name
         }
       else
@@ -32,7 +32,7 @@ module Payola
     end
 
     def self.expiration_date(details)
-      return nil unless details
+      return nil unless details && details[:exp_year] && details[:exp_month]
       Date.new(details[:exp_year].to_i, details[:exp_month].to_i, 1)
     end
   end
