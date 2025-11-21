@@ -10,6 +10,11 @@ All notable changes to Payola will be documented in this file.
 - **Remove docverter development dependency**: The unmaintained `docverter` gem was removed as a development dependency to resolve Ruby 2.7+ compatibility warnings. If you use PDF receipt functionality (`Payola.pdf_receipt = true`), you must now explicitly add `gem 'docverter'` to your application's Gemfile or migrate to an alternative PDF generation system.
 - **Standardize on underscores for expiration date fields**: The `_form.html.erb` partial now uses underscores instead of hyphens for expiration date fields. This includes `data-stripe` attributes (`exp_month`, `exp_year`), `id` attributes, and jQuery selectors. This aligns with Stripe's documentation and JavaScript conventions. If you have custom CSS or JavaScript targeting `#exp-month` or `#exp-year`, update them to use `#exp_month` and `#exp_year`. Similarly, update any custom forms using `data-stripe="exp-month"` to use `data-stripe="exp_month"`.
 
+### Deprecated Stripe API Removals
+- **Replace `at_period_end` with `cancel_at_period_end`**: The `at_period_end` parameter was removed from the Stripe subscription cancel endpoint in API version 2018-08-23. `CancelSubscription` now uses `Stripe::Subscription.update` with `cancel_at_period_end: true` instead of passing `at_period_end` to the cancel endpoint.
+- **Replace `prorate` with `proration_behavior`**: The deprecated `prorate` parameter in `ChangeSubscriptionPlan` has been replaced with `proration_behavior`, which accepts `'create_prorations'` or `'none'`.
+- **Replace `customer.subscriptions.create()` with `Stripe::Subscription.create()`**: Subscription creation now uses the top-level `Stripe::Subscription.create()` API instead of the deprecated customer-nested endpoint.
+
 ### Enhancements
 - Add support for Ruby 3.4. Previously, only Ruby 2.6 and earlier were supported.
 - Update the `rails` gem from 5.0 to 8.0
