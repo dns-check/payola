@@ -151,14 +151,17 @@ module Payola
           double('Stripe::Subscription', base_attrs)
         end
 
-        it "should activate subscription when Stripe returns 'active' or 'trialing' status" do
+        it "should activate subscription when Stripe returns 'active' status" do
           subscription = create(:subscription, state: 'processing', plan: plan, stripe_token: token)
 
-          # StripeMock may return 'active' or 'trialing' by default
+          allow(Stripe::Subscription).to receive(:create).and_return(
+            mock_stripe_subscription('active', plan.amount)
+          )
+
           StartSubscription.call(subscription)
 
           expect(subscription.reload.active?).to be true
-          expect(['active', 'trialing']).to include(subscription.reload.stripe_status)
+          expect(subscription.reload.stripe_status).to eq 'active'
         end
 
         it "should activate subscription when Stripe returns 'trialing' status" do

@@ -5,8 +5,6 @@ module Payola
 
       if options[:at_period_end] == true
         # Schedule cancellation at period end via update
-        # Note: The at_period_end parameter was removed from the cancel endpoint
-        # in Stripe API 2018-08-23. Must use update with cancel_at_period_end instead.
         Stripe::Subscription.update(
           subscription.stripe_id,
           { cancel_at_period_end: true },

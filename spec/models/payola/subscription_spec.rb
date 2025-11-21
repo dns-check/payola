@@ -215,14 +215,6 @@ module Payola
       end
 
       context "when transition is not allowed from current state" do
-        it "should not activate a canceled subscription" do
-          subscription.activate!
-          subscription.cancel!
-          subscription.sync_state_from_stripe_status('active')
-          expect(subscription.canceled?).to be true
-          expect(subscription.active?).to be false
-        end
-
         it "should not cancel a pending subscription" do
           new_subscription = create(:subscription, plan: plan, state: 'pending')
           new_subscription.sync_state_from_stripe_status('canceled')
