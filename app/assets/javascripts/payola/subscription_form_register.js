@@ -52,7 +52,7 @@ var PayolaRegistrationForm = {
             return;
         }
         var handler = function(data) {
-            if (!PayolaStripeScA.handlePollResponse(data, {
+            if (!PayolaStripeSCA.handlePollResponse(data, {
                 onActive: function() {
                     form.append($('<input type="hidden" name="payola_subscription_guid"></input>').val(guid));
                     form.append(PayolaRegistrationForm.authenticityTokenInput());

@@ -86,7 +86,7 @@ var PayolaOnestepSubscriptionForm = {
             return;
         }
         var handler = function(data) {
-            if (!PayolaStripeScA.handlePollResponse(data, {
+            if (!PayolaStripeSCA.handlePollResponse(data, {
                 onActive: function() {
                     window.location = base_path + '/confirm_subscription/' + guid;
                 },
