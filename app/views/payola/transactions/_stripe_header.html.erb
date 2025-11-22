@@ -1,8 +1,5 @@
-<script type="text/javascript" src="https://js.stripe.com/v2/"></script>
 <script type="text/javascript" src="https://js.stripe.com/v3/"></script>
 <script type="text/javascript">
-  // Set up Stripe.js v2 for legacy token creation
-  Stripe.setPublishableKey("<%= Payola.publishable_key %>");
-  // Store the publishable key for Stripe.js v3 (used for 3D Secure/SCA)
-  Stripe.key = "<%= Payola.publishable_key %>";
+  // Initialize Stripe.js v3
+  var payolaStripe = Stripe("<%= Payola.publishable_key %>");
 </script>

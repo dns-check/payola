@@ -9,75 +9,48 @@ var PayolaOnestepSubscriptionForm = {
     },
 
     handleSubmit: function(form) {
-        if (!PayolaOnestepSubscriptionForm.validateForm(form)) {
+        var validation = PayolaStripe.validateCard(form);
+        if (!validation.valid) {
+            PayolaOnestepSubscriptionForm.showError(form, validation.error);
             return false;
         }
 
         $(form).find(':submit').prop('disabled', true);
         $('.payola-spinner').show();
-        Stripe.card.createToken(form, function(status, response) {
-            PayolaOnestepSubscriptionForm.stripeResponseHandler(form, status, response);
-        });
+
+        PayolaStripe.createToken(form,
+            function(token) { PayolaOnestepSubscriptionForm.onTokenSuccess(form, token); },
+            function(error) { PayolaOnestepSubscriptionForm.showError(form, error); }
+        );
+
         return false;
     },
 
-    validateForm: function(form) {
-        var cardNumber = $( "input[data-stripe='number']" ).val();
-        if (!Stripe.card.validateCardNumber(cardNumber)) {
-            PayolaOnestepSubscriptionForm.showError(form, 'The card number is not a valid credit card number.');
-            return false;
-        }
-        var expValid;
-        if ($("[data-stripe='exp']").length){
-            expValid = Stripe.card.validateExpiry($("[data-stripe='exp']").val());
-        }else{
-            var expMonth = $("[data-stripe='exp_month']").val();
-            var expYear = $("[data-stripe='exp_year']").val();
-            expValid = Stripe.card.validateExpiry(expMonth, expYear);
-        }
-        if (!expValid) {
-            PayolaOnestepSubscriptionForm.showError(form, "Your card's expiration month/year is invalid.");
-            return false;
-        }
+    onTokenSuccess: function(form, token) {
+        var email = form.find("[data-payola='email']").val();
+        var coupon = form.find("[data-payola='coupon']").val();
+        var quantity = form.find("[data-payola='quantity']").val();
 
-        var cvc = $( "input[data-stripe='cvc']" ).val();
-        if(!Stripe.card.validateCVC(cvc)) {
-            PayolaOnestepSubscriptionForm.showError(form, "Your card's security code is invalid.");
-            return false;
-        }
+        var base_path = form.data('payola-base-path');
+        var plan_type = form.data('payola-plan-type');
+        var plan_id = form.data('payola-plan-id');
 
-        return true;
-    },
+        var action = $(form).attr('action');
 
-    stripeResponseHandler: function(form, status, response) {
-        if (response.error) {
-            PayolaOnestepSubscriptionForm.showError(form, response.error.message);
-        } else {
-            var email = form.find("[data-payola='email']").val();
-            var coupon = form.find("[data-payola='coupon']").val();
-            var quantity = form.find("[data-payola='quantity']").val();
-
-            var base_path = form.data('payola-base-path');
-            var plan_type = form.data('payola-plan-type');
-            var plan_id = form.data('payola-plan-id');
-
-            var action = $(form).attr('action');
-
-            form.append($('<input type="hidden" name="plan_type">').val(plan_type));
-            form.append($('<input type="hidden" name="plan_id">').val(plan_id));
-            form.append($('<input type="hidden" name="stripeToken">').val(response.id));
-            form.append($('<input type="hidden" name="stripeEmail">').val(email));
-            form.append($('<input type="hidden" name="coupon">').val(coupon));
-            form.append($('<input type="hidden" name="quantity">').val(quantity));
-            form.append(PayolaOnestepSubscriptionForm.authenticityTokenInput());
-            $.ajax({
-                type: "POST",
-                url: action,
-                data: form.serialize(),
-                success: function(data) { PayolaOnestepSubscriptionForm.poll(form, 60, data.guid, base_path); },
-                error: function(data) { PayolaOnestepSubscriptionForm.showError(form, jQuery.parseJSON(data.responseText).error); }
-            });
-        }
+        form.append($('<input type="hidden" name="plan_type">').val(plan_type));
+        form.append($('<input type="hidden" name="plan_id">').val(plan_id));
+        form.append($('<input type="hidden" name="stripeToken">').val(token.id));
+        form.append($('<input type="hidden" name="stripeEmail">').val(email));
+        form.append($('<input type="hidden" name="coupon">').val(coupon));
+        form.append($('<input type="hidden" name="quantity">').val(quantity));
+        form.append(PayolaOnestepSubscriptionForm.authenticityTokenInput());
+        $.ajax({
+            type: "POST",
+            url: action,
+            data: form.serialize(),
+            success: function(data) { PayolaOnestepSubscriptionForm.poll(form, 60, data.guid, base_path); },
+            error: function(data) { PayolaOnestepSubscriptionForm.showError(form, jQuery.parseJSON(data.responseText).error); }
+        });
     },
 
     poll: function(form, num_retries_left, guid, base_path) {

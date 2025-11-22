@@ -11,39 +11,38 @@ var PayolaPaymentForm = {
     handleSubmit: function(form) {
         form.find(':submit').prop('disabled', true);
         $('.payola-spinner').show();
-        Stripe.card.createToken(form, function(status, response) {
-            PayolaPaymentForm.stripeResponseHandler(form, status, response);
-        });
+
+        PayolaStripe.createToken(form,
+            function(token) { PayolaPaymentForm.onTokenSuccess(form, token); },
+            function(error) { PayolaPaymentForm.showError(form, error); }
+        );
+
         return false;
     },
 
-    stripeResponseHandler: function(form, status, response) {
-        if (response.error) {
-            PayolaPaymentForm.showError(form, response.error.message);
-        } else {
-            var email = form.find("[data-payola='email']").val();
+    onTokenSuccess: function(form, token) {
+        var email = form.find("[data-payola='email']").val();
 
-            var base_path = form.data('payola-base-path');
-            var product = form.data('payola-product');
-            var permalink = form.data('payola-permalink');
-            var currency = form.data('payola-currency');
-            var stripe_customer_id = form.data('stripe_customer_id');
-  
-            var data_form = $('<form></form>');
-            data_form.append($('<input type="hidden" name="stripe_customer_id">').val(stripe_customer_id));
-            data_form.append($('<input type="hidden" name="currency">').val(currency));
-            data_form.append($('<input type="hidden" name="stripeToken">').val(response.id));
-            data_form.append($('<input type="hidden" name="stripeEmail">').val(email));
-            data_form.append(PayolaPaymentForm.authenticityTokenInput());
+        var base_path = form.data('payola-base-path');
+        var product = form.data('payola-product');
+        var permalink = form.data('payola-permalink');
+        var currency = form.data('payola-currency');
+        var stripe_customer_id = form.data('stripe_customer_id');
 
-            $.ajax({
-                type: "POST",
-                url: base_path + "/buy/" + product + "/" + permalink,
-                data: data_form.serialize(),
-                success: function(data) { PayolaPaymentForm.poll(form, 60, data.guid, base_path); },
-                error: function(data) { PayolaPaymentForm.showError(form, jQuery.parseJSON(data.responseText).error); }
-            });
-        }
+        var data_form = $('<form></form>');
+        data_form.append($('<input type="hidden" name="stripe_customer_id">').val(stripe_customer_id));
+        data_form.append($('<input type="hidden" name="currency">').val(currency));
+        data_form.append($('<input type="hidden" name="stripeToken">').val(token.id));
+        data_form.append($('<input type="hidden" name="stripeEmail">').val(email));
+        data_form.append(PayolaPaymentForm.authenticityTokenInput());
+
+        $.ajax({
+            type: "POST",
+            url: base_path + "/buy/" + product + "/" + permalink,
+            data: data_form.serialize(),
+            success: function(data) { PayolaPaymentForm.poll(form, 60, data.guid, base_path); },
+            error: function(data) { PayolaPaymentForm.showError(form, jQuery.parseJSON(data.responseText).error); }
+        });
     },
 
     poll: function(form, num_retries_left, guid, base_path) {

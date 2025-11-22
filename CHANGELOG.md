@@ -16,6 +16,16 @@ All notable changes to Payola will be documented in this file.
 - **Replace `customer.subscriptions.create()` with `Stripe::Subscription.create()`**: Subscription creation now uses the top-level `Stripe::Subscription.create()` API instead of the deprecated customer-nested endpoint.
 
 ### Enhancements
+- **Standardize on Stripe.js v3**: All JavaScript files now use Stripe.js v3 exclusively. Previously, the codebase used both v2 and v3. This reduces page weight and aligns with Stripe's current recommendations.
+
+  **Action required**: Custom payment forms now require the `_stripe_header` partial to initialize the `payolaStripe` global:
+  ```erb
+  <%= render 'payola/transactions/stripe_header' %>
+  ```
+  Without this, form submissions will fail with "Stripe.js not initialized" errors.
+
+  The `_checkout` partials (for legacy Stripe Checkout popup) are unaffected by this change.
+
 - Add support for Ruby 3.4. Previously, only Ruby 2.6 and earlier were supported.
 - Update the `rails` gem from 5.0 to 8.0
 - Update the `stripe` gem from 2.8 to 8.7

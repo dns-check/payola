@@ -1,15 +1,5 @@
 // Shared 3D Secure (SCA) authentication support for Payola subscription forms
 var PayolaStripeSCA = {
-    // Store the Stripe.js v3 instance for 3D Secure authentication
-    stripeV3: null,
-
-    // Initialize Stripe.js v3 for 3D Secure support
-    initialize: function() {
-        if (typeof Stripe !== 'undefined' && Stripe.key) {
-            PayolaStripeSCA.stripeV3 = Stripe(Stripe.key);
-        }
-    },
-
     // Handle 3D Secure authentication for subscriptions requiring SCA
     // Returns true if 3D Secure handling was initiated, false otherwise
     handleIfIncomplete: function(data, onSuccess, onError) {
@@ -22,17 +12,11 @@ var PayolaStripeSCA = {
 
     // Perform 3D Secure authentication with the given client secret
     authenticate: function(clientSecret, onSuccess, onError) {
-        var stripe = PayolaStripeSCA.stripeV3;
+        var stripe = PayolaStripe.getStripe();
 
         if (!stripe) {
-            // Try to initialize Stripe.js v3 if not already done
-            if (typeof Stripe !== 'undefined' && Stripe.key) {
-                stripe = Stripe(Stripe.key);
-                PayolaStripeSCA.stripeV3 = stripe;
-            } else {
-                onError("Unable to initialize 3D Secure authentication. Please refresh the page and try again.");
-                return;
-            }
+            onError("Unable to initialize 3D Secure authentication. Please refresh the page and try again.");
+            return;
         }
 
         // Use confirmCardPayment to handle 3D Secure authentication
@@ -63,6 +47,3 @@ var PayolaStripeSCA = {
         return false;
     }
 };
-
-// Initialize on load
-PayolaStripeSCA.initialize();
