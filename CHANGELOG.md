@@ -26,6 +26,8 @@ All notable changes to Payola will be documented in this file.
 
   The `_checkout` partials (for legacy Stripe Checkout popup) are unaffected by this change.
 
+  **Note**: Payola continues to use `data-stripe` attributes for form fields (e.g., `data-stripe="number"`, `data-stripe="cvc"`). This is compatible with Stripe.js v3—the `PayolaStripe` utility extracts card data from these fields and calls `stripe.createToken('card', cardData)`, which is a valid v3 API method. Existing forms that use `data-stripe` attributes will continue to work without modification.
+
 - Add support for Ruby 3.4. Previously, only Ruby 2.6 and earlier were supported.
 - Update the `rails` gem from 5.0 to 8.0
 - Update the `stripe` gem from 2.8 to 8.7
