@@ -8,13 +8,28 @@ var PayolaStripe = {
         return null;
     },
 
+    // Extract expiration month and year from form
+    // Handles both combined [data-stripe='exp'] and separate exp_month/exp_year fields
+    extractExpiry: function(form) {
+        if (form.find("[data-stripe='exp']").length) {
+            var exp = form.find("[data-stripe='exp']").val();
+            var parts = exp.split(/[\s\/]+/);
+            return { month: parts[0], year: parts[1] };
+        }
+        return {
+            month: form.find("[data-stripe='exp_month']").val(),
+            year: form.find("[data-stripe='exp_year']").val()
+        };
+    },
+
     // Extract card data from a form with data-stripe attributes
     extractCardData: function(form) {
+        var expiry = PayolaStripe.extractExpiry(form);
         return {
             number: form.find("[data-stripe='number']").val().replace(/\s/g, ''),
             cvc: form.find("[data-stripe='cvc']").val(),
-            exp_month: form.find("[data-stripe='exp_month']").val(),
-            exp_year: form.find("[data-stripe='exp_year']").val()
+            exp_month: expiry.month,
+            exp_year: expiry.year
         };
     },
 
@@ -83,18 +98,8 @@ var PayolaStripe = {
             return { valid: false, error: 'The card number is not a valid credit card number.' };
         }
 
-        var expMonth, expYear;
-        if (form.find("[data-stripe='exp']").length) {
-            var exp = form.find("[data-stripe='exp']").val();
-            var parts = exp.split(/[\s\/]+/);
-            expMonth = parts[0];
-            expYear = parts[1];
-        } else {
-            expMonth = form.find("[data-stripe='exp_month']").val();
-            expYear = form.find("[data-stripe='exp_year']").val();
-        }
-
-        if (!PayolaStripe.validateExpiry(expMonth, expYear)) {
+        var expiry = PayolaStripe.extractExpiry(form);
+        if (!PayolaStripe.validateExpiry(expiry.month, expiry.year)) {
             return { valid: false, error: "Your card's expiration month/year is invalid." };
         }
 
