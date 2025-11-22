@@ -8,46 +8,64 @@ var PayolaStripe = {
         return null;
     },
 
-    // Extract expiration month and year from form
-    // Handles both combined [data-stripe='exp'] and separate exp_month/exp_year fields
-    extractExpiry: function(form) {
-        if (form.find("[data-stripe='exp']").length) {
-            var exp = form.find("[data-stripe='exp']").val();
-            var parts = exp.split(/[\s\/]+/);
-            return { month: parts[0], year: parts[1] };
+    // Create and mount a Stripe Card Element
+    // Returns the card element, or null if Stripe is not initialized
+    // If errorElement is provided, attaches a change listener to display validation errors
+    createCardElement: function(mountPoint, options, errorElement) {
+        var stripe = PayolaStripe.getStripe();
+        if (!stripe) return null;
+
+        var elements = stripe.elements();
+        var card = elements.create('card', options || {});
+        card.mount(mountPoint);
+
+        // Attach error display listener if errorElement provided
+        if (errorElement) {
+            card.on('change', function(event) {
+                if (typeof errorElement === 'string') {
+                    errorElement = document.querySelector(errorElement);
+                }
+                if (errorElement) {
+                    errorElement.textContent = event.error ? event.error.message : '';
+                }
+            });
         }
-        return {
-            month: form.find("[data-stripe='exp_month']").val(),
-            year: form.find("[data-stripe='exp_year']").val()
-        };
+
+        return card;
     },
 
-    // Extract card data from a form with data-stripe attributes
-    extractCardData: function(form) {
-        var expiry = PayolaStripe.extractExpiry(form);
-        return {
-            number: form.find("[data-stripe='number']").val().replace(/\s/g, ''),
-            cvc: form.find("[data-stripe='cvc']").val(),
-            exp_month: expiry.month,
-            exp_year: expiry.year
-        };
+    // Mount Card Elements on forms matching a selector
+    // Returns an object mapping form IDs to card elements
+    mountCardElements: function(formSelector, cardElementsStore) {
+        $(formSelector).each(function() {
+            var form = $(this);
+            var formId = form.attr('id') || 'default';
+            var mountPoint = form.find('#card-element')[0];
+            var errorElement = form.find('#card-errors')[0];
+
+            if (mountPoint && !cardElementsStore[formId]) {
+                var cardElement = PayolaStripe.createCardElement(mountPoint, null, errorElement);
+                if (cardElement) {
+                    cardElementsStore[formId] = cardElement;
+                }
+            }
+        });
     },
 
-    // Create a Stripe token from form card data
+    // Create a Stripe token from a Card Element
     // Calls onSuccess(token) or onError(message)
-    // Uses legacy Stripe.card.createToken() for backward compatibility with data-stripe forms
-    createToken: function(form, onSuccess, onError) {
-        if (typeof Stripe === 'undefined' || typeof Stripe.card === 'undefined') {
+    createToken: function(cardElement, onSuccess, onError) {
+        var stripe = PayolaStripe.getStripe();
+        if (!stripe) {
             onError("Stripe.js not initialized. Please refresh the page.");
             return;
         }
 
-        var cardData = PayolaStripe.extractCardData(form);
-        Stripe.card.createToken(cardData, function(status, response) {
-            if (response.error) {
-                onError(response.error.message);
+        stripe.createToken(cardElement).then(function(result) {
+            if (result.error) {
+                onError(result.error.message);
             } else {
-                onSuccess(response);
+                onSuccess(result.token);
             }
         });
     },
@@ -89,25 +107,5 @@ var PayolaStripe = {
     validateCVC: function(cvc) {
         if (!cvc) return false;
         return /^\d{3,4}$/.test(cvc);
-    },
-
-    // Validate all card fields in a form
-    validateCard: function(form) {
-        var cardNumber = form.find("input[data-stripe='number']").val();
-        if (!PayolaStripe.validateCardNumber(cardNumber)) {
-            return { valid: false, error: 'The card number is not a valid credit card number.' };
-        }
-
-        var expiry = PayolaStripe.extractExpiry(form);
-        if (!PayolaStripe.validateExpiry(expiry.month, expiry.year)) {
-            return { valid: false, error: "Your card's expiration month/year is invalid." };
-        }
-
-        var cvc = form.find("input[data-stripe='cvc']").val();
-        if (!PayolaStripe.validateCVC(cvc)) {
-            return { valid: false, error: "Your card's security code is invalid." };
-        }
-
-        return { valid: true };
     }
 };

@@ -2,6 +2,4 @@
 <script type="text/javascript">
   // Initialize Stripe.js v3 global for PayolaStripe utilities
   window.payolaStripe = Stripe("<%= Payola.publishable_key %>");
-  // Also set publishable key for legacy Stripe.card.createToken() API
-  Stripe.setPublishableKey("<%= Payola.publishable_key %>");
 </script>

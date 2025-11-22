@@ -1,5 +1,9 @@
 var PayolaOnestepSubscriptionForm = {
+    cardElements: {},
+
     initialize: function() {
+        PayolaStripe.mountCardElements('.payola-onestep-subscription-form', PayolaOnestepSubscriptionForm.cardElements);
+
         $(document).off('submit.payola-onestep-subscription-form').on(
             'submit.payola-onestep-subscription-form', '.payola-onestep-subscription-form',
             function() {
@@ -9,16 +13,16 @@ var PayolaOnestepSubscriptionForm = {
     },
 
     handleSubmit: function(form) {
-        var validation = PayolaStripe.validateCard(form);
-        if (!validation.valid) {
-            PayolaOnestepSubscriptionForm.showError(form, validation.error);
+        var cardElement = PayolaOnestepSubscriptionForm.cardElements[form.attr('id') || 'default'];
+        if (!cardElement) {
+            PayolaOnestepSubscriptionForm.showError(form, "Card input not found. Please refresh the page.");
             return false;
         }
 
         $(form).find(':submit').prop('disabled', true);
         $('.payola-spinner').show();
 
-        PayolaStripe.createToken(form,
+        PayolaStripe.createToken(cardElement,
             function(token) { PayolaOnestepSubscriptionForm.onTokenSuccess(form, token); },
             function(error) { PayolaOnestepSubscriptionForm.showError(form, error); }
         );
