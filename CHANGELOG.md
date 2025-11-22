@@ -29,14 +29,16 @@ All notable changes to Payola will be documented in this file.
      <div id="card-errors" role="alert"></div>
      ```
 
-  3. Update JavaScript to mount and use the Card Element:
-     ```javascript
-     // Mount the Card Element
-     var cardElement = PayolaStripe.createCardElement('#card-element');
+  3. Remove any custom JavaScript that was used for card formatting (e.g., jQuery Payment plugin). Payola's built-in form handlers (`PayolaOnestepSubscriptionForm`, `PayolaTwostepSubscriptionForm`, `PayolaPaymentForm`) automatically mount the Card Element and handle form submission when they detect the `#card-element` div.
 
-     // Create token on form submit
-     PayolaStripe.createToken(cardElement, onSuccess, onError);
-     ```
+  **Note**: If you have completely custom payment forms that don't use Payola's standard form classes (`.payola-onestep-subscription-form`, etc.), you'll need to manually mount and handle the card element:
+  ```javascript
+  // Mount the Card Element with error display
+  var cardElement = PayolaStripe.createCardElement('#card-element', null, '#card-errors');
+
+  // Create token on form submit
+  PayolaStripe.createToken(cardElement, onSuccess, onError);
+  ```
 
   The `_checkout` partials (for legacy Stripe Checkout popup) are unaffected by this change.
 
