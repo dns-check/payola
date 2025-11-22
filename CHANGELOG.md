@@ -16,7 +16,7 @@ All notable changes to Payola will be documented in this file.
      <%= render 'payola/transactions/stripe_header' %>
      ```
 
-  2. Replace card input fields with a Card Element mount point:
+  2. Replace card input fields with separate Card Element mount points:
      ```html
      <!-- Old (remove these) -->
      <input data-stripe="number" ... />
@@ -24,20 +24,24 @@ All notable changes to Payola will be documented in this file.
      <input data-stripe="exp_month" ... />
      <input data-stripe="exp_year" ... />
 
-     <!-- New (add this) -->
-     <div id="card-element"></div>
+     <!-- New (add these) -->
+     <div id="card-number"></div>
+     <div id="card-expiry"></div>
+     <div id="card-cvc"></div>
      <div id="card-errors" role="alert"></div>
      ```
 
-  3. Remove any custom JavaScript that was used for card formatting (e.g., jQuery Payment plugin). Payola's built-in form handlers (`PayolaOnestepSubscriptionForm`, `PayolaTwostepSubscriptionForm`, `PayolaPaymentForm`) automatically mount the Card Element and handle form submission when they detect the `#card-element` div.
+  3. Remove any custom JavaScript that was used for card formatting (e.g., jQuery Payment plugin). Payola's built-in form handlers (`PayolaOnestepSubscriptionForm`, `PayolaTwostepSubscriptionForm`, `PayolaPaymentForm`) automatically mount the Card Elements and handle form submission when they detect the mount point divs.
 
-  **Note**: If you have completely custom payment forms that don't use Payola's standard form classes (`.payola-onestep-subscription-form`, `.payola-subscription-form`, `.payola-payment-form`), you'll need to manually mount and handle the card element:
+  **Note**: If you have completely custom payment forms that don't use Payola's standard form classes (`.payola-onestep-subscription-form`, `.payola-subscription-form`, `.payola-payment-form`), you'll need to manually mount and handle the card elements:
   ```javascript
-  // Mount the Card Element with error display
-  var cardElement = PayolaStripe.createCardElement('#card-element', null, '#card-errors');
+  // Mount the Card Elements with error display
+  var cardNumber = PayolaStripe.createCardElements(
+      '#card-number', '#card-expiry', '#card-cvc', null, '#card-errors'
+  );
 
-  // Create token on form submit
-  PayolaStripe.createToken(cardElement, onSuccess, onError);
+  // Create token on form submit (pass the cardNumber element)
+  PayolaStripe.createToken(cardNumber, onSuccess, onError);
   ```
 
   The `_checkout` partials (for legacy Stripe Checkout popup) are unaffected by this change.

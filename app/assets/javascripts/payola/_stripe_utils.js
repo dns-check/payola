@@ -8,45 +8,62 @@ var PayolaStripe = {
         return null;
     },
 
-    // Create and mount a Stripe Card Element
-    // Returns the card element, or null if Stripe is not initialized
-    // If errorElement is provided, attaches a change listener to display validation errors
-    createCardElement: function(mountPoint, options, errorElement) {
+    // Create and mount separate Stripe Card Elements (cardNumber, cardExpiry, cardCvc)
+    // Returns the cardNumber element (used for tokenization), or null if Stripe is not initialized
+    // If errorElement is provided, attaches change listeners to display validation errors
+    createCardElements: function(numberMount, expiryMount, cvcMount, options, errorElement) {
         var stripe = PayolaStripe.getStripe();
         if (!stripe) return null;
 
         var elements = stripe.elements();
-        var card = elements.create('card', options || {});
-        card.mount(mountPoint);
+        var cardNumber = elements.create('cardNumber', options || {});
+        var cardExpiry = elements.create('cardExpiry', options || {});
+        var cardCvc = elements.create('cardCvc', options || {});
+
+        cardNumber.mount(numberMount);
+        cardExpiry.mount(expiryMount);
+        cardCvc.mount(cvcMount);
 
         // Attach error display listener if errorElement provided
         if (errorElement) {
-            card.on('change', function(event) {
+            var handleError = function(event) {
                 if (typeof errorElement === 'string') {
                     errorElement = document.querySelector(errorElement);
                 }
                 if (errorElement) {
                     errorElement.textContent = event.error ? event.error.message : '';
                 }
-            });
+            };
+
+            cardNumber.on('change', handleError);
+            cardExpiry.on('change', handleError);
+            cardCvc.on('change', handleError);
         }
 
-        return card;
+        return cardNumber;
     },
 
     // Mount Card Elements on forms matching a selector
-    // Returns an object mapping form IDs to card elements
+    // Uses separate elements: #card-number, #card-expiry, #card-cvc
+    // Returns the cardNumber element reference (Stripe uses it to find related elements during tokenization)
     mountCardElements: function(formSelector, cardElementsStore) {
         $(formSelector).each(function() {
             var form = $(this);
             var formId = form.attr('id') || 'default';
-            var mountPoint = form.find('#card-element')[0];
+
+            if (cardElementsStore[formId]) return;
+
+            var numberMount = form.find('#card-number')[0];
+            var expiryMount = form.find('#card-expiry')[0];
+            var cvcMount = form.find('#card-cvc')[0];
             var errorElement = form.find('#card-errors')[0];
 
-            if (mountPoint && !cardElementsStore[formId]) {
-                var cardElement = PayolaStripe.createCardElement(mountPoint, null, errorElement);
-                if (cardElement) {
-                    cardElementsStore[formId] = cardElement;
+            if (numberMount && expiryMount && cvcMount) {
+                var cardNumber = PayolaStripe.createCardElements(
+                    numberMount, expiryMount, cvcMount, null, errorElement
+                );
+                if (cardNumber) {
+                    cardElementsStore[formId] = cardNumber;
                 }
             }
         });
