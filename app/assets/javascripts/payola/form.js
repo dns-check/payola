@@ -1,5 +1,9 @@
 var PayolaPaymentForm = {
+    cardElements: {},
+
     initialize: function() {
+        PayolaStripe.mountCardElements('.payola-payment-form', PayolaPaymentForm.cardElements);
+
         $(document).off('submit.payola-payment-form').on(
             'submit.payola-payment-form', '.payola-payment-form',
             function() {
@@ -9,10 +13,16 @@ var PayolaPaymentForm = {
     },
 
     handleSubmit: function(form) {
+        var cardElement = PayolaPaymentForm.cardElements[form.attr('id') || 'default'];
+        if (!cardElement) {
+            PayolaPaymentForm.showError(form, "Card input not found. Please refresh the page.");
+            return false;
+        }
+
         form.find(':submit').prop('disabled', true);
         $('.payola-spinner').show();
 
-        PayolaStripe.createToken(form,
+        PayolaStripe.createToken(cardElement,
             function(token) { PayolaPaymentForm.onTokenSuccess(form, token); },
             function(error) { PayolaPaymentForm.showError(form, error); }
         );

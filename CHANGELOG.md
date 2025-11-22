@@ -31,7 +31,7 @@ All notable changes to Payola will be documented in this file.
 
   3. Remove any custom JavaScript that was used for card formatting (e.g., jQuery Payment plugin). Payola's built-in form handlers (`PayolaOnestepSubscriptionForm`, `PayolaTwostepSubscriptionForm`, `PayolaPaymentForm`) automatically mount the Card Element and handle form submission when they detect the `#card-element` div.
 
-  **Note**: If you have completely custom payment forms that don't use Payola's standard form classes (`.payola-onestep-subscription-form`, etc.), you'll need to manually mount and handle the card element:
+  **Note**: If you have completely custom payment forms that don't use Payola's standard form classes (`.payola-onestep-subscription-form`, `.payola-subscription-form`, `.payola-payment-form`), you'll need to manually mount and handle the card element:
   ```javascript
   // Mount the Card Element with error display
   var cardElement = PayolaStripe.createCardElement('#card-element', null, '#card-errors');
@@ -41,6 +41,8 @@ All notable changes to Payola will be documented in this file.
   ```
 
   The `_checkout` partials (for legacy Stripe Checkout popup) are unaffected by this change.
+
+- **Stripe.js v2 no longer supported**: The deprecated `data-stripe` form fields (e.g., `data-stripe="number"`, `data-stripe="cvc"`) and `Stripe.card.createToken()` API are no longer supported. All forms must use Stripe Elements as described above.
 
 - **Remove docverter development dependency**: The unmaintained `docverter` gem was removed as a development dependency to resolve Ruby 2.7+ compatibility warnings. If you use PDF receipt functionality (`Payola.pdf_receipt = true`), you must now explicitly add `gem 'docverter'` to your application's Gemfile or migrate to an alternative PDF generation system.
 
