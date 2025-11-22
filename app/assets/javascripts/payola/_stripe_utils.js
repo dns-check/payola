@@ -35,21 +35,21 @@ var PayolaStripe = {
 
     // Create a Stripe token from form card data
     // Calls onSuccess(token) or onError(message)
+    // Uses legacy Stripe.card.createToken() for backward compatibility with data-stripe forms
     createToken: function(form, onSuccess, onError) {
-        var stripe = PayolaStripe.getStripe();
-        if (!stripe) {
+        if (typeof Stripe === 'undefined' || typeof Stripe.card === 'undefined') {
             onError("Stripe.js not initialized. Please refresh the page.");
             return;
         }
 
-        stripe.createToken('card', PayolaStripe.extractCardData(form))
-            .then(function(result) {
-                if (result.error) {
-                    onError(result.error.message);
-                } else {
-                    onSuccess(result.token);
-                }
-            });
+        var cardData = PayolaStripe.extractCardData(form);
+        Stripe.card.createToken(cardData, function(status, response) {
+            if (response.error) {
+                onError(response.error.message);
+            } else {
+                onSuccess(response);
+            }
+        });
     },
 
     // Validate card number using Luhn algorithm
