@@ -16,7 +16,8 @@ var PayolaStripe = {
         if (!stripe) return null;
 
         var elements = stripe.elements();
-        var cardNumber = elements.create('cardNumber', options || {});
+        var numberOptions = $.extend({}, options || {}, { showIcon: true });
+        var cardNumber = elements.create('cardNumber', numberOptions);
         var cardExpiry = elements.create('cardExpiry', options || {});
         var cardCvc = elements.create('cardCvc', options || {});
 
@@ -59,8 +60,17 @@ var PayolaStripe = {
             var errorElement = form.find('#card-errors')[0];
 
             if (numberMount && expiryMount && cvcMount) {
+                var options = {
+                    style: {
+                        base: {
+                            '::placeholder': {
+                                color: '#999'
+                            }
+                        }
+                    }
+                };
                 var cardNumber = PayolaStripe.createCardElements(
-                    numberMount, expiryMount, cvcMount, null, errorElement
+                    numberMount, expiryMount, cvcMount, options, errorElement
                 );
                 if (cardNumber) {
                     cardElementsStore[formId] = cardNumber;
