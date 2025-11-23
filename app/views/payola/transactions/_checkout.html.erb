@@ -23,8 +23,6 @@
     id: form_id,
     class: 'payola-checkout-form',
     'data-payola-base-path' => main_app.payola_path,
-    'data-payola-product' => product_class,
-    'data-payola-permalink' => product_permalink,
     'data-payola-currency' => currency,
     'data-payola-error-selector' => "##{error_div_id}"
   }
@@ -49,9 +47,6 @@
     },
     onSubmit: function(token, form) {
       var email = form.querySelector("[data-payola='email']").value;
-      var basePath = form.getAttribute('data-payola-base-path');
-      var product = form.getAttribute('data-payola-product');
-      var permalink = form.getAttribute('data-payola-permalink');
       var currency = form.getAttribute('data-payola-currency');
       var stripeCustomerId = form.getAttribute('data-stripe-customer-id');
       var signedCustomFields = form.getAttribute('data-payola-signed-custom-fields');
@@ -63,7 +58,7 @@
       if (stripeCustomerId) data.append('stripe_customer_id', stripeCustomerId);
       if (signedCustomFields) data.append('signed_custom_fields', signedCustomFields);
 
-      PayolaCheckoutForm.submitAndPoll(form, basePath + '/buy/' + product + '/' + permalink, data, checkout.poll);
+      PayolaCheckoutForm.submitAndPoll(form, form.action, data, checkout.poll);
     },
     onPollSuccess: function(data, guid, basePath, form, retriesLeft) {
       if (data.status === 'finished') {
