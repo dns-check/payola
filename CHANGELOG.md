@@ -77,7 +77,7 @@ All notable changes to Payola will be documented in this file.
 ### Enhancements
 - Add support for Ruby 3.4. Previously, only Ruby 2.6 and earlier were supported.
 - Update the `rails` gem from 5.0 to 8.0
-- Update the `stripe` gem from 2.8 to 8.7
+- Update the `stripe` gem from 2.8 to 13.5.1
 - Update Stripe API version from 2015-02-18 to 2020-03-02
 - **Allow canceling subscriptions in `processing` state**: Subscriptions with `stripe_status: "incomplete"` (SCA/3D Secure pending) can now be canceled. Previously, the AASM state machine only allowed the `cancel` event from `active` state, but incomplete subscriptions remain in `processing` state. This affected users who wanted to cancel a subscription during the 23-hour window before Stripe auto-expires it.
 - **Improved subscription state handling**: Subscriptions now properly sync their AASM state based on Stripe subscription status via webhooks. This correctly handles new Stripe subscription statuses introduced in API 2019-03-14 (`incomplete`, `incomplete_expired`, `past_due`, `unpaid`, `paused`). The `customer.subscription.updated` webhook now transitions local subscription state to match Stripe's status (e.g., `incomplete_expired` → `errored`, `active` → `active`, `canceled` → `canceled`).
