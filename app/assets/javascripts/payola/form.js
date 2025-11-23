@@ -58,6 +58,7 @@ var PayolaPaymentForm = {
     poll: function(form, num_retries_left, guid, base_path) {
         if (num_retries_left === 0) {
             PayolaPaymentForm.showError(form, "This seems to be taking too long. Please contact support and give them transaction ID: " + guid);
+            return;
         }
 
         var handler = function(data) {
