@@ -13,7 +13,12 @@ var PayolaStripe = {
     // If errorElement is provided, attaches change listeners to display validation errors
     createCardElements: function(numberMount, expiryMount, cvcMount, options, errorElement) {
         var stripe = PayolaStripe.getStripe();
-        if (!stripe) return null;
+        if (!stripe) {
+            if (typeof console !== 'undefined' && console.warn) {
+                console.warn('Payola: payolaStripe is not defined. Make sure to include the Stripe header partial and set your publishable key.');
+            }
+            return null;
+        }
 
         var elements = stripe.elements();
         var numberOptions = $.extend({}, options || {}, { showIcon: true });
