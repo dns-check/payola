@@ -42,4 +42,6 @@ var PayolaPaymentForm = PayolaStripe.createFormHandler({
     }
 });
 
-PayolaPaymentForm.initialize();
+$(document).ready(function() {
+    PayolaPaymentForm.initialize();
+});

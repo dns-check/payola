@@ -104,4 +104,6 @@ var PayolaRegistrationForm = {
     }
 };
 
-PayolaRegistrationForm.initialize();
+$(document).ready(function() {
+    PayolaRegistrationForm.initialize();
+});

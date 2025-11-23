@@ -48,4 +48,6 @@ var PayolaOnestepSubscriptionForm = PayolaStripe.createFormHandler({
     }
 });
 
-PayolaOnestepSubscriptionForm.initialize();
+$(document).ready(function() {
+    PayolaOnestepSubscriptionForm.initialize();
+});

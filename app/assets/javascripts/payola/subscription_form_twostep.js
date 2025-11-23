@@ -47,4 +47,6 @@ var PayolaSubscriptionForm = PayolaStripe.createFormHandler({
     }
 });
 
-PayolaSubscriptionForm.initialize();
+$(document).ready(function() {
+    PayolaSubscriptionForm.initialize();
+});
