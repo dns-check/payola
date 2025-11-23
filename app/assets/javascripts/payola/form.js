@@ -66,6 +66,8 @@ var PayolaPaymentForm = {
                 form.append($('<input type="hidden" name="payola_sale_guid"></input>').val(guid));
                 form.append(PayolaPaymentForm.authenticityTokenInput());
                 form.get(0).submit();
+            } else if (data.status === "errored") {
+                PayolaPaymentForm.showError(form, data.error);
             } else {
                 setTimeout(function() { PayolaPaymentForm.poll(form, num_retries_left - 1, guid, base_path); }, 500);
             }
