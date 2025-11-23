@@ -88,6 +88,30 @@ var PayolaStripe = {
         return $('<input type="hidden" name="authenticity_token"></input>').val($('meta[name="csrf-token"]').attr("content"));
     },
 
+    // Show error message and re-enable form submission
+    // Options:
+    //   showErrorElement: if true, calls .show() on the error element (default: false)
+    showError: function(form, message, options) {
+        options = options || {};
+        $('.payola-spinner').hide();
+        $(form).find(':submit')
+               .prop('disabled', false)
+               .trigger('error', message);
+
+        var error_selector = form.data('payola-error-selector');
+        if (error_selector) {
+            $(error_selector).text(message);
+            if (options.showErrorElement) {
+                $(error_selector).show();
+            }
+        } else {
+            form.find('.payola-payment-error').text(message);
+            if (options.showErrorElement) {
+                form.find('.payola-payment-error').show();
+            }
+        }
+    },
+
     // Create a Stripe token from a Card Element
     // Calls onSuccess(token) or onError(message)
     createToken: function(cardElement, onSuccess, onError) {

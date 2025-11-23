@@ -93,18 +93,7 @@ var PayolaSubscriptionForm = {
     },
 
     showError: function(form, message) {
-        $('.payola-spinner').hide();
-        $(form).find(':submit')
-               .prop('disabled', false)
-               .trigger('error', message);
-        var error_selector = form.data('payola-error-selector');
-        if (error_selector) {
-            $(error_selector).text(message);
-            $(error_selector).show();
-        } else {
-            form.find('.payola-payment-error').text(message);
-            form.find('.payola-payment-error').show();
-        }
+        PayolaStripe.showError(form, message, { showErrorElement: true });
     }
 };
 
