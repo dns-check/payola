@@ -8,8 +8,16 @@
     <input autofocus="true" type="email" name="email" id="email" placeholder="you@example.com" class="payment-input"/>
   </div>
   <div class="row">
-    <label class="control-label" for="card-element">Card Details <span class="pull-right" style="margin-right: 8px"><img src="<%= asset_path('visa.png') %>" style="height: 15px;"><img src="<%= asset_path('mastercard.png') %>" style="height: 15px;"><img src="<%= asset_path('amex.png') %>" style="height: 15px;"><img src="<%= asset_path('discover.png') %>" style="height: 15px;"></span></label>
-    <div id="card-element" class="payment-input"></div>
+    <label class="control-label" for="card-number">Card Number <span class="pull-right" style="margin-right: 8px"><img src="<%= asset_path('visa.png') %>" style="height: 15px;"><img src="<%= asset_path('mastercard.png') %>" style="height: 15px;"><img src="<%= asset_path('amex.png') %>" style="height: 15px;"><img src="<%= asset_path('discover.png') %>" style="height: 15px;"></span></label>
+    <div id="card-number" class="payment-input"></div>
+  </div>
+  <div class="row">
+    <label class="control-label" for="card-expiry">Expiration</label>
+    <div id="card-expiry" class="payment-input"></div>
+  </div>
+  <div class="row">
+    <label class="control-label" for="card-cvc">CVC</label>
+    <div id="card-cvc" class="payment-input"></div>
     <div id="card-errors" role="alert" style="color: #dc3545; margin-top: 8px; font-size: 14px;"></div>
   </div>
   <div class="row" style="margin-top: 20px">
@@ -39,7 +47,7 @@
 
     var stripe = Stripe('<%= stripe_key %>');
     window.payolaStripe = stripe;
-    var cardElement = PayolaStripe.createCardElement('#card-element', null, '#card-errors');
+    var cardElement = PayolaStripe.createCardElements('#card-number', '#card-expiry', '#card-cvc', null, '#card-errors');
 
     $('#payment-form').submit(function(event) {
       var form = $(this);
