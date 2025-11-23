@@ -1,36 +1,10 @@
-var PayolaPaymentForm = {
-    cardElements: {},
+var PayolaPaymentForm = PayolaStripe.createFormHandler({
+    formSelector: '.payola-payment-form',
+    eventNamespace: 'payola-payment-form',
+    statusEndpoint: 'status',
+    showErrorElement: false,
 
-    initialize: function() {
-        PayolaStripe.mountCardElements('.payola-payment-form', PayolaPaymentForm.cardElements);
-
-        $(document).off('submit.payola-payment-form').on(
-            'submit.payola-payment-form', '.payola-payment-form',
-            function() {
-                return PayolaPaymentForm.handleSubmit($(this));
-            }
-        );
-    },
-
-    handleSubmit: function(form) {
-        var cardElement = PayolaPaymentForm.cardElements[form.attr('id') || 'default'];
-        if (!cardElement) {
-            PayolaPaymentForm.showError(form, "Card input not found. Please refresh the page.");
-            return false;
-        }
-
-        form.find(':submit').prop('disabled', true);
-        $('.payola-spinner').show();
-
-        PayolaStripe.createToken(cardElement,
-            function(token) { PayolaPaymentForm.onTokenSuccess(form, token); },
-            function(error) { PayolaPaymentForm.showError(form, error); }
-        );
-
-        return false;
-    },
-
-    onTokenSuccess: function(form, token) {
+    onTokenSuccess: function(form, token, handler) {
         var email = form.find("[data-payola='email']").val();
 
         var base_path = form.data('payola-base-path');
@@ -50,44 +24,22 @@ var PayolaPaymentForm = {
             type: "POST",
             url: base_path + "/buy/" + product + "/" + permalink,
             data: data_form.serialize(),
-            success: function(data) { PayolaPaymentForm.poll(form, 60, data.guid, base_path); },
-            error: function(data) { PayolaPaymentForm.showError(form, jQuery.parseJSON(data.responseText).error); }
+            success: function(data) { handler.poll(form, 60, data.guid, base_path); },
+            error: function(data) { handler.showError(form, jQuery.parseJSON(data.responseText).error); }
         });
     },
 
-    poll: function(form, num_retries_left, guid, base_path) {
-        if (num_retries_left === 0) {
-            PayolaPaymentForm.showError(form, "This seems to be taking too long. Please contact support and give them transaction ID: " + guid);
-            return;
+    onPollSuccess: function(form, data, guid, basePath, numRetriesLeft, handler) {
+        if (data.status === "finished") {
+            form.append($('<input type="hidden" name="payola_sale_guid"></input>').val(guid));
+            form.append(PayolaStripe.authenticityTokenInput());
+            form.get(0).submit();
+        } else if (data.status === "errored") {
+            handler.showError(form, data.error);
+        } else {
+            setTimeout(function() { handler.poll(form, numRetriesLeft - 1, guid, basePath); }, 500);
         }
-
-        var handler = function(data) {
-            if (data.status === "finished") {
-                form.append($('<input type="hidden" name="payola_sale_guid"></input>').val(guid));
-                form.append(PayolaStripe.authenticityTokenInput());
-                form.get(0).submit();
-            } else if (data.status === "errored") {
-                PayolaPaymentForm.showError(form, data.error);
-            } else {
-                setTimeout(function() { PayolaPaymentForm.poll(form, num_retries_left - 1, guid, base_path); }, 500);
-            }
-        };
-        var errorHandler = function(jqXHR) {
-            PayolaPaymentForm.showError(form, jQuery.parseJSON(jqXHR.responseText).error);
-        };
-
-        $.ajax({
-            type: 'GET',
-            dataType: 'json',
-            url: base_path + '/status/' + guid,
-            success: handler,
-            error: errorHandler
-        });
-    },
-
-    showError: function(form, message) {
-        PayolaStripe.showError(form, message);
     }
-};
+});
 
 PayolaPaymentForm.initialize();

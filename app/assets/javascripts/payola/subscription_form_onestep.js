@@ -1,36 +1,10 @@
-var PayolaOnestepSubscriptionForm = {
-    cardElements: {},
+var PayolaOnestepSubscriptionForm = PayolaStripe.createFormHandler({
+    formSelector: '.payola-onestep-subscription-form',
+    eventNamespace: 'payola-onestep-subscription-form',
+    statusEndpoint: 'subscription_status',
+    showErrorElement: true,
 
-    initialize: function() {
-        PayolaStripe.mountCardElements('.payola-onestep-subscription-form', PayolaOnestepSubscriptionForm.cardElements);
-
-        $(document).off('submit.payola-onestep-subscription-form').on(
-            'submit.payola-onestep-subscription-form', '.payola-onestep-subscription-form',
-            function() {
-                return PayolaOnestepSubscriptionForm.handleSubmit($(this));
-            }
-        );
-    },
-
-    handleSubmit: function(form) {
-        var cardElement = PayolaOnestepSubscriptionForm.cardElements[form.attr('id') || 'default'];
-        if (!cardElement) {
-            PayolaOnestepSubscriptionForm.showError(form, "Card input not found. Please refresh the page.");
-            return false;
-        }
-
-        $(form).find(':submit').prop('disabled', true);
-        $('.payola-spinner').show();
-
-        PayolaStripe.createToken(cardElement,
-            function(token) { PayolaOnestepSubscriptionForm.onTokenSuccess(form, token); },
-            function(error) { PayolaOnestepSubscriptionForm.showError(form, error); }
-        );
-
-        return false;
-    },
-
-    onTokenSuccess: function(form, token) {
+    onTokenSuccess: function(form, token, handler) {
         var email = form.find("[data-payola='email']").val();
         var coupon = form.find("[data-payola='coupon']").val();
         var quantity = form.find("[data-payola='quantity']").val();
@@ -52,49 +26,26 @@ var PayolaOnestepSubscriptionForm = {
             type: "POST",
             url: action,
             data: form.serialize(),
-            success: function(data) { PayolaOnestepSubscriptionForm.poll(form, 60, data.guid, base_path); },
-            error: function(data) { PayolaOnestepSubscriptionForm.showError(form, jQuery.parseJSON(data.responseText).error); }
+            success: function(data) { handler.poll(form, 60, data.guid, base_path); },
+            error: function(data) { handler.showError(form, jQuery.parseJSON(data.responseText).error); }
         });
     },
 
-    poll: function(form, num_retries_left, guid, base_path) {
-        if (num_retries_left === 0) {
-            PayolaOnestepSubscriptionForm.showError(form, "This seems to be taking too long. Please contact support and give them transaction ID: " + guid);
-            return;
-        }
-        var handler = function(data) {
-            if (!PayolaStripeSCA.handlePollResponse(data, {
-                onActive: function() {
-                    window.location = base_path + '/confirm_subscription/' + guid;
-                },
-                onError: function(error) {
-                    PayolaOnestepSubscriptionForm.showError(form, error);
-                },
-                onScaSuccess: function() {
-                    setTimeout(function() { PayolaOnestepSubscriptionForm.poll(form, 60, guid, base_path); }, 1000);
-                }
-            })) {
-                setTimeout(function() { PayolaOnestepSubscriptionForm.poll(form, num_retries_left - 1, guid, base_path); }, 500);
+    onPollSuccess: function(form, data, guid, basePath, numRetriesLeft, handler) {
+        if (!PayolaStripeSCA.handlePollResponse(data, {
+            onActive: function() {
+                window.location = basePath + '/confirm_subscription/' + guid;
+            },
+            onError: function(error) {
+                handler.showError(form, error);
+            },
+            onScaSuccess: function() {
+                setTimeout(function() { handler.poll(form, 60, guid, basePath); }, 1000);
             }
-        };
-        var errorHandler = function(jqXHR){
-            PayolaOnestepSubscriptionForm.showError(form, jQuery.parseJSON(jqXHR.responseText).error);
-        };
-
-        if (typeof guid != 'undefined') {
-            $.ajax({
-                type: 'GET',
-                dataType: 'json',
-                url: base_path + '/subscription_status/' + guid,
-                success: handler,
-                error: errorHandler
-            });
+        })) {
+            setTimeout(function() { handler.poll(form, numRetriesLeft - 1, guid, basePath); }, 500);
         }
-    },
-
-    showError: function(form, message) {
-        PayolaStripe.showError(form, message, { showErrorElement: true });
     }
-};
+});
 
 PayolaOnestepSubscriptionForm.initialize();

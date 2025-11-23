@@ -128,6 +128,76 @@ var PayolaStripe = {
                 onSuccess(result.token);
             }
         });
+    },
+
+    // Create a form handler with common patterns
+    // Config options:
+    //   formSelector: CSS selector for forms to handle
+    //   eventNamespace: unique namespace for jQuery events (e.g., 'payola-payment-form')
+    //   showErrorElement: whether to call .show() on error elements (default: false)
+    //   onTokenSuccess: function(form, token, handler) - called after successful tokenization
+    //   onPollSuccess: function(form, data, guid, basePath, numRetriesLeft, handler) - called on poll response
+    createFormHandler: function(config) {
+        var handler = {
+            cardElements: {},
+
+            initialize: function() {
+                PayolaStripe.mountCardElements(config.formSelector, handler.cardElements);
+
+                $(document).off('submit.' + config.eventNamespace).on(
+                    'submit.' + config.eventNamespace, config.formSelector,
+                    function() {
+                        return handler.handleSubmit($(this));
+                    }
+                );
+            },
+
+            handleSubmit: function(form) {
+                var cardElement = handler.cardElements[form.attr('id') || 'default'];
+                if (!cardElement) {
+                    handler.showError(form, "Card input not found. Please refresh the page.");
+                    return false;
+                }
+
+                $(form).find(':submit').prop('disabled', true);
+                $('.payola-spinner').show();
+
+                PayolaStripe.createToken(cardElement,
+                    function(token) { config.onTokenSuccess(form, token, handler); },
+                    function(error) { handler.showError(form, error); }
+                );
+
+                return false;
+            },
+
+            poll: function(form, numRetriesLeft, guid, basePath) {
+                if (numRetriesLeft === 0) {
+                    handler.showError(form, "This seems to be taking too long. Please contact support and give them transaction ID: " + guid);
+                    return;
+                }
+
+                var successHandler = function(data) {
+                    config.onPollSuccess(form, data, guid, basePath, numRetriesLeft, handler);
+                };
+                var errorHandler = function(jqXHR) {
+                    handler.showError(form, jQuery.parseJSON(jqXHR.responseText).error);
+                };
+
+                $.ajax({
+                    type: 'GET',
+                    dataType: 'json',
+                    url: basePath + '/' + config.statusEndpoint + '/' + guid,
+                    success: successHandler,
+                    error: errorHandler
+                });
+            },
+
+            showError: function(form, message) {
+                PayolaStripe.showError(form, message, { showErrorElement: config.showErrorElement });
+            }
+        };
+
+        return handler;
     }
 };
 
