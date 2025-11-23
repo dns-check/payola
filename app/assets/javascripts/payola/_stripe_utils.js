@@ -27,18 +27,22 @@ var PayolaStripe = {
 
         // Attach error display listener if errorElement provided
         if (errorElement) {
-            var handleError = function(event) {
-                if (typeof errorElement === 'string') {
-                    errorElement = document.querySelector(errorElement);
-                }
-                if (errorElement) {
-                    errorElement.textContent = event.error ? event.error.message : '';
-                }
-            };
+            var errorEl;
+            if (typeof errorElement === 'string') {
+                errorEl = document.querySelector(errorElement);
+            } else {
+                errorEl = errorElement;
+            }
 
-            cardNumber.on('change', handleError);
-            cardExpiry.on('change', handleError);
-            cardCvc.on('change', handleError);
+            if (errorEl) {
+                var handleError = function(event) {
+                    errorEl.textContent = event.error ? event.error.message : '';
+                };
+
+                cardNumber.on('change', handleError);
+                cardExpiry.on('change', handleError);
+                cardCvc.on('change', handleError);
+            }
         }
 
         return cardNumber;
