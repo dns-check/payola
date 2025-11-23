@@ -4,8 +4,6 @@
   plan_id = plan.id
   quantity = local_assigns.fetch :quantity, 1
   coupon = local_assigns.fetch :coupon, nil
-  price = local_assigns.fetch :price, plan.amount * quantity
-  name = local_assigns.fetch :name, plan.name
   custom_fields = local_assigns.fetch :custom_fields, nil
   form_url = local_assigns.fetch :form_url, payola.subscribe_path(plan_class: plan_class, plan_id: plan_id)
   stripe_customer_id = local_assigns.fetch :stripe_customer_id, nil
