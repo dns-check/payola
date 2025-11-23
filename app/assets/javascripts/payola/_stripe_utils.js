@@ -83,6 +83,11 @@ var PayolaStripe = {
         });
     },
 
+    // Return a hidden input element with the CSRF authenticity token
+    authenticityTokenInput: function() {
+        return $('<input type="hidden" name="authenticity_token"></input>').val($('meta[name="csrf-token"]').attr("content"));
+    },
+
     // Create a Stripe token from a Card Element
     // Calls onSuccess(token) or onError(message)
     createToken: function(cardElement, onSuccess, onError) {

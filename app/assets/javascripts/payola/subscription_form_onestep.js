@@ -47,7 +47,7 @@ var PayolaOnestepSubscriptionForm = {
         form.append($('<input type="hidden" name="stripeEmail">').val(email));
         form.append($('<input type="hidden" name="coupon">').val(coupon));
         form.append($('<input type="hidden" name="quantity">').val(quantity));
-        form.append(PayolaOnestepSubscriptionForm.authenticityTokenInput());
+        form.append(PayolaStripe.authenticityTokenInput());
         $.ajax({
             type: "POST",
             url: action,
@@ -106,10 +106,6 @@ var PayolaOnestepSubscriptionForm = {
             form.find('.payola-payment-error').text(message);
             form.find('.payola-payment-error').show();
         }
-    },
-
-    authenticityTokenInput: function() {
-        return $('<input type="hidden" name="authenticity_token"></input>').val($('meta[name="csrf-token"]').attr("content"));
     }
 };
 

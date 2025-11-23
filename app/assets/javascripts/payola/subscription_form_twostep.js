@@ -44,7 +44,7 @@ var PayolaSubscriptionForm = {
         data_form.append($('<input type="hidden" name="stripeEmail">').val(email));
         data_form.append($('<input type="hidden" name="coupon">').val(coupon));
         data_form.append($('<input type="hidden" name="quantity">').val(quantity));
-        data_form.append(PayolaSubscriptionForm.authenticityTokenInput());
+        data_form.append(PayolaStripe.authenticityTokenInput());
         $.ajax({
             type: "POST",
             url: base_path + "/subscribe/" + plan_type + "/" + plan_id,
@@ -63,7 +63,7 @@ var PayolaSubscriptionForm = {
             if (!PayolaStripeSCA.handlePollResponse(data, {
                 onActive: function() {
                     form.append($('<input type="hidden" name="payola_subscription_guid"></input>').val(guid));
-                    form.append(PayolaSubscriptionForm.authenticityTokenInput());
+                    form.append(PayolaStripe.authenticityTokenInput());
                     form.get(0).submit();
                 },
                 onError: function(error) {
@@ -105,10 +105,6 @@ var PayolaSubscriptionForm = {
             form.find('.payola-payment-error').text(message);
             form.find('.payola-payment-error').show();
         }
-    },
-
-    authenticityTokenInput: function() {
-        return $('<input type="hidden" name="authenticity_token"></input>').val($('meta[name="csrf-token"]').attr("content"));
     }
 };
 
