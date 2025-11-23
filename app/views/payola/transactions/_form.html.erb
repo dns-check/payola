@@ -8,21 +8,17 @@
     <input autofocus="true" type="email" name="email" id="email" placeholder="you@example.com" class="payment-input"/>
   </div>
   <div class="row">
-    <label class="control-label" for="number">Card Number <span class="pull-right" style="margin-right: 8px"><img src="<%= asset_path('visa.png') %>" style="height: 15px;"><img src="<%= asset_path('mastercard.png') %>" style="height: 15px;"><img src="<%= asset_path('amex.png') %>" style="height: 15px;"><img src="<%= asset_path('discover.png') %>" style="height: 15px;"></span></label>
-    <input type="text" size="20" data-stripe="number" id="number" placeholder="1234 5678 9012 3456" pattern="[\d ]*" class="payment-input"/>
+    <label class="control-label" for="card-number">Card Number <span class="pull-right" style="margin-right: 8px"><img src="<%= asset_path('visa.png') %>" style="height: 15px;"><img src="<%= asset_path('mastercard.png') %>" style="height: 15px;"><img src="<%= asset_path('amex.png') %>" style="height: 15px;"><img src="<%= asset_path('discover.png') %>" style="height: 15px;"></span></label>
+    <div id="card-number" class="payment-input"></div>
   </div>
   <div class="row">
-    <div style="float: left">
-      <label class="control-label" for="cvc">CV Code</label>
-      <input type="text" style="width: 3em" size="3" data-stripe="cvc" id="cvc" placeholder="123" pattern="\d*"/>
-      <img id="card-image" src="<%= asset_path('credit.png') %>" style="height: 30px; padding-left: 10px; margin-top: -10px">
-    </div>
-    <div style="float: right; margin-right: 8px">
-      <label class="control-label">Expiry Date</label>
-      <input style="width: 2em" type="text" size="2" id="exp_month" data-stripe="exp_month" placeholder="MM" pattern="\d*"/>
-      <span> / </span>
-      <input style="width: 3em" type="text" size="4" id="exp_year" data-stripe="exp_year" placeholder="YYYY" pattern="\d*"/>
-    </div>
+    <label class="control-label" for="card-expiry">Expiration</label>
+    <div id="card-expiry" class="payment-input"></div>
+  </div>
+  <div class="row">
+    <label class="control-label" for="card-cvc">CVC</label>
+    <div id="card-cvc" class="payment-input"></div>
+    <div id="card-errors" role="alert" style="color: #dc3545; margin-top: 8px; font-size: 14px;"></div>
   </div>
   <div class="row" style="margin-top: 20px">
     <div class="price" style="margin-top: 20px; float: left"><%= price %></div>
@@ -45,73 +41,39 @@
     </div>
   </div>
 </div>
-<script type="text/javascript" src="https://js.stripe.com/v2/"></script>
+<script type="text/javascript" src="https://js.stripe.com/v3/"></script>
 <script type="text/javascript">
   $(function(){
 
-    Stripe.setPublishableKey('<%= stripe_key %>');
-
-    $('#number').payment('formatCardNumber');
-    $('#cvc').payment('formatCardCVC');
-    $('#exp_month').payment('restrictNumeric');
-    $('#exp_year').payment('restrictNumeric');
-    $('#number').keyup(function(event) {
-      var number = $('#number').val();
-      var cardType = $.payment.cardType(number);
-      var img = $('#card-image')[0];
-      if (cardType === 'visa') {
-        $('#cvc').attr("placeholder", "123");
-        img.src = "<%= asset_path('visa.png') %>";
-      } else if (cardType === 'mastercard') {
-        $('#cvc').attr("placeholder", "123");
-        img.src = "<%= asset_path('mastercard.png') %>";
-      } else if (cardType === 'discover') {
-        $('#cvc').attr("placeholder", "123");
-        img.src = "<%= asset_path('discover.png') %>";
-      } else if (cardType === 'amex') {
-        $('#cvc').attr("placeholder", "1234");
-        img.src = "<%= asset_path('amex.png') %>";
-      } else if (cardType === 'dinersclub') {
-        $('#cvc').attr("placeholder", "123");
-        img.src = "<%= asset_path('diners.png') %>";
-      } else if (cardType === 'maestro') {
-        $('#cvc').attr("placeholder", "123");
-        img.src = "<%= asset_path('maestro.png') %>";
-      } else if (cardType === 'laser') {
-        $('#cvc').attr("placeholder", "123");
-        img.src = "<%= asset_path('laser.png') %>";
-      } else {
-        $('#cvc').attr("placeholder", "123");
-        img.src = "<%= asset_path('credit.png')%>";
-      }
-    });
+    var stripe = Stripe('<%= stripe_key %>');
+    window.payolaStripe = stripe;
+    var cardElement = PayolaStripe.createCardElements('#card-number', '#card-expiry', '#card-cvc', null, '#card-errors');
 
     $('#payment-form').submit(function(event) {
       var form = $(this);
       form.find('button').prop('disabled', true);
-      Stripe.createToken(form, stripeResponseHandler);
+
+      stripe.createToken(cardElement).then(function(result) {
+        if (result.error) {
+          showError(result.error.message);
+        } else {
+          var token = result.token.id;
+          form.append($('<input type="hidden" name="stripeToken">').val(token));
+          $.ajax({
+            type: "POST",
+            url: "<%= payola.buy_url(product_class: sale.product.product_class, permalink: sale.product.permalink) %>",
+            data: $('#payment-form').serialize(),
+            success: function(data) { poll(data.guid, 60) },
+            error: function(data) { showError(jQuery.parseJSON(data.responseText).error) }
+          });
+        }
+      });
+
       $('#pay-button').hide();
       $('#spinner-button').show();
       $('#pay-button').prop('disabled', false);
       return false;
     });
-
-    function stripeResponseHandler(status, response) {
-      var form = $('#payment-form');
-      if (response.error) {
-        showError(response.error.message);
-      } else {
-        var token = response.id;
-        form.append($('<input type="hidden" name="stripeToken">').val(token));
-        $.ajax({
-          type: "POST",
-          url: "<%= payola.buy_url(product_class: sale.product.product_class, permalink: sale.product.permalink) %>",
-          data: $('#payment-form').serialize(),
-          success: function(data) { poll(data.guid, 60) },
-          error: function(data) { showError(jQuery.parseJSON(data.responseText).error) }
-        });
-      }
-    }
 
     function showError(error) {
       var form = $('#payment-form');

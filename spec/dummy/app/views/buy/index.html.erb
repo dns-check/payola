@@ -7,12 +7,11 @@
   Email:<br>
   <input type="email" name="stripeEmail" data-payola="email"></input><br>
   Card Number<br>
-  <input type="text" data-stripe="number"></input><br>
-  Exp Month<br>
-  <input type="text" data-stripe="exp_month"></input><br>
-  Exp Year<br>
-  <input type="text" data-stripe="exp_year"></input><br>
+  <div id="card-number"></div><br>
+  Expiration<br>
+  <div id="card-expiry"></div><br>
   CVC<br>
-  <input type="text" data-stripe="cvc"></input><br>
+  <div id="card-cvc"></div><br>
+  <div id="card-errors" role="alert"></div>
   <input type="submit"></input>
 <% end %>

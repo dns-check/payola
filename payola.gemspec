@@ -18,7 +18,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency "rails", "~> 8.0.4"
   s.add_dependency "jquery-rails", "~> 4.6"
-  s.add_dependency "stripe", "~> 8.7.0"
+  s.add_dependency "stripe", "~> 13.0"
   s.add_dependency "aasm", "~> 5.5"
   s.add_dependency "stripe_event", "~> 2.13"
 
