@@ -44,9 +44,28 @@ All notable changes to Payola will be documented in this file.
   PayolaStripe.createToken(cardNumber, onSuccess, onError);
   ```
 
-  The `_checkout` partials (for legacy Stripe Checkout popup) are unaffected by this change.
-
 - **Stripe.js v2 no longer supported**: The deprecated `data-stripe` form fields (e.g., `data-stripe="number"`, `data-stripe="cvc"`) and `Stripe.card.createToken()` API are no longer supported. All forms must use Stripe Elements as described above.
+
+- **Remove legacy Stripe Checkout**: The `_checkout` partials (`payola/transactions/_checkout` and `payola/subscriptions/_checkout`) now use Stripe Elements instead of the deprecated Stripe Checkout modal (`StripeCheckout.configure()`). This is a **visual change**: the modal popup has been replaced with an embedded form.
+
+  **Removed features** (no longer applicable with Stripe Elements):
+  - `allow_remember_me` - The "Remember me" checkbox for saving cards in browser is not available with Elements
+  - `bitcoin` - Bitcoin payments were deprecated by Stripe
+  - `panel_label` - Custom label on the Checkout modal button
+  - `product_image_path` / `plan_image_path` - Image displayed in the Checkout modal
+  - `billing_address` / `shipping_address` - Address collection in the modal (must be collected via custom form fields if needed)
+  - `verify_zip_code` - ZIP code verification in the modal
+  - `include_stripe_checkout_assets` - No longer needed
+
+  The following options continue to work:
+  - `button_text` - Text shown on the submit button
+  - `price`, `name`, `quantity`, `coupon`, `tax_percent` - Pricing and plan options
+  - `custom_fields` - Signed custom fields
+  - `stripe_customer_id` - Reuse existing Stripe customer
+  - `error_div_id` - Custom error display location
+  - `form_url` - Custom form submission URL (subscriptions only)
+
+  If you need to collect billing/shipping addresses, add custom form fields to your page and handle them in your application.
 
 - **Remove docverter development dependency**: The unmaintained `docverter` gem was removed as a development dependency to resolve Ruby 2.7+ compatibility warnings. If you use PDF receipt functionality (`Payola.pdf_receipt = true`), you must now explicitly add `gem 'docverter'` to your application's Gemfile or migrate to an alternative PDF generation system.
 

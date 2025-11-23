@@ -97,3 +97,119 @@ var PayolaStripe = {
         });
     }
 };
+
+// Shared checkout form utilities for inline checkout partials
+var PayolaCheckoutForm = {
+    // Initialize a checkout form with Stripe Elements and submit handling
+    // Options:
+    //   formId: ID of the form element
+    //   publishableKey: Stripe publishable key
+    //   onSubmit: function(token, form) - called with token after successful tokenization
+    //   onPollSuccess: function(data, guid, basePath) - called when polling returns success status
+    //   pollEndpoint: function(basePath, guid) - returns the poll URL
+    //   confirmPath: function(basePath, guid) - returns the confirmation redirect URL
+    init: function(options) {
+        var stripe = Stripe(options.publishableKey);
+        window.payolaStripe = stripe;
+
+        var form = document.getElementById(options.formId);
+        var cardElement = PayolaStripe.createCardElements('#card-number', '#card-expiry', '#card-cvc', null, '#card-errors');
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            PayolaCheckoutForm.setLoading(form, true);
+
+            stripe.createToken(cardElement).then(function(result) {
+                if (result.error) {
+                    PayolaCheckoutForm.showError(form, result.error.message);
+                } else {
+                    options.onSubmit(result.token, form);
+                }
+            });
+        });
+
+        return {
+            form: form,
+            stripe: stripe,
+            cardElement: cardElement,
+            poll: function(guid, retriesLeft) {
+                PayolaCheckoutForm.poll(form, guid, retriesLeft, options);
+            }
+        };
+    },
+
+    // Set form loading state
+    setLoading: function(form, loading) {
+        var submitButton = form.querySelector('button[type="submit"]');
+        var buttonText = form.querySelector('.payola-checkout-button-text');
+        var spinner = form.querySelector('.payola-checkout-button-spinner');
+
+        submitButton.disabled = loading;
+        buttonText.style.display = loading ? 'none' : 'inline';
+        spinner.style.display = loading ? 'inline' : 'none';
+    },
+
+    // Show error message and reset form state
+    showError: function(form, message) {
+        PayolaCheckoutForm.setLoading(form, false);
+
+        var errorSelector = form.getAttribute('data-payola-error-selector');
+        var errorDiv = document.querySelector(errorSelector);
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    },
+
+    // Poll for transaction/subscription status
+    poll: function(form, guid, retriesLeft, options) {
+        if (retriesLeft === 0) {
+            PayolaCheckoutForm.showError(form, 'This seems to be taking too long. Please contact support and reference ID: ' + guid);
+            return;
+        }
+
+        var basePath = form.getAttribute('data-payola-base-path');
+
+        fetch(options.pollEndpoint(basePath, guid), {
+            credentials: 'same-origin'
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            options.onPollSuccess(data, guid, basePath, form, retriesLeft);
+        })
+        .catch(function(error) {
+            PayolaCheckoutForm.showError(form, error.message);
+        });
+    },
+
+    // Append CSRF token to FormData
+    appendCsrfToken: function(formData) {
+        var csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (csrfToken) {
+            formData.append('authenticity_token', csrfToken.getAttribute('content'));
+        }
+    },
+
+    // Submit form data via fetch and start polling
+    submitAndPoll: function(form, url, formData, pollFn) {
+        PayolaCheckoutForm.appendCsrfToken(formData);
+
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin'
+        })
+        .then(function(response) {
+            return response.json().then(function(json) {
+                if (!response.ok) throw new Error(json.error || 'Request failed');
+                return json;
+            });
+        })
+        .then(function(data) {
+            pollFn(data.guid, 60);
+        })
+        .catch(function(error) {
+            PayolaCheckoutForm.showError(form, error.message);
+        });
+    }
+};

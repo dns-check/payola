@@ -1,0 +1,26 @@
+<div class="payola-checkout-fields">
+  <div class="payola-checkout-field">
+    <label for="<%= form_id %>-email">Email</label>
+    <input type="email" id="<%= form_id %>-email" data-payola="email" required />
+  </div>
+  <div class="payola-checkout-field">
+    <label>Card Number</label>
+    <div id="card-number" class="payola-card-element"></div>
+  </div>
+  <div class="payola-checkout-field">
+    <label>Expiration</label>
+    <div id="card-expiry" class="payola-card-element"></div>
+  </div>
+  <div class="payola-checkout-field">
+    <label>CVC</label>
+    <div id="card-cvc" class="payola-card-element"></div>
+  </div>
+  <div id="card-errors" role="alert" class="payola-card-errors"></div>
+</div>
+<% if show_default_error_div %>
+  <div class="payola-checkout-error" style="display: none;" id="<%= error_div_id %>"></div>
+<% end %>
+<button type="submit" class="payola-checkout-button">
+  <span class="payola-checkout-button-text"><%= button_text %></span>
+  <span class="payola-checkout-button-spinner" style="display: none;">Processing...</span>
+</button>

@@ -1,28 +1,15 @@
 <%
-  button_class = local_assigns.fetch :button_class, "stripe-button-el"
-  button_inner_style = local_assigns.fetch :button_inner_style, 'min-height: 30px'
   button_text = local_assigns.fetch :button_text, "Pay Now"
   product_class = sellable.product_class
   product_permalink = sellable.permalink
   price = local_assigns.fetch :price, sellable.price
   name = local_assigns.fetch :name, sellable.name
-  description = local_assigns.fetch :description, "#{name} (#{formatted_price(price)})"
-  product_image_path = local_assigns.fetch :product_image_path , ''
-  panel_label = local_assigns.fetch :panel_label, ''
-  allow_remember_me = local_assigns.fetch :allow_remember_me, true
-  email = local_assigns.fetch :email, ''
-  verify_zip_code = local_assigns.fetch :verify_zip_code, false
   custom_fields = local_assigns.fetch :custom_fields, nil
-  billing_address = local_assigns.fetch :billing_address, false
-  shipping_address = local_assigns.fetch :shipping_address, false
-  bitcoin = local_assigns.fetch :bitcoin, false
   stripe_customer_id = local_assigns.fetch :stripe_customer_id, nil
 
   sale = Payola::Sale.new(product: sellable)
 
-  button_id = "payola-button-#{product_class}-#{product_permalink}"
-
-  form_id = "#{button_id}-form"
+  form_id = "payola-checkout-form-#{product_class}-#{product_permalink}"
 
   currency = sellable.respond_to?(:currency) ? sellable.currency : Payola.default_currency
 
@@ -30,51 +17,65 @@
   if error_div_id.present?
     show_default_error_div = false
   else
-    error_div_id = "#{button_id}-errors"
+    error_div_id = "#{form_id}-errors"
     show_default_error_div = true
   end
 
-  raw_data = {
-    base_path: main_app.payola_path,
-    form_id: form_id,
-    button_id: button_id,
-    error_div_id: error_div_id,
-    product_class: product_class,
-    product_permalink: product_permalink,
-    price: price,
-    name: name,
-    description: description,
-    currency: currency,
-    product_image_path: product_image_path,
-    publishable_key: Payola.publishable_key_for_sale(sale),
-    panel_label: panel_label,
-    allow_remember_me: allow_remember_me,
-    email: email,
-    verify_zip_code: verify_zip_code,
-    billing_address: billing_address,
-    shipping_address: shipping_address,
-    bitcoin: bitcoin,
-    stripe_customer_id: stripe_customer_id
+  html_hash = {
+    id: form_id,
+    class: 'payola-checkout-form',
+    'data-payola-base-path' => main_app.payola_path,
+    'data-payola-product' => product_class,
+    'data-payola-permalink' => product_permalink,
+    'data-payola-currency' => currency,
+    'data-payola-error-selector' => "##{error_div_id}"
   }
 
-  raw_data[:signed_custom_fields] = sale.verifier.generate(custom_fields) if custom_fields
-
-  html_hash = {}
-  raw_data.each do |k,v|
-    html_hash["data-#{k}"] = v
-  end
-  html_hash["id"] = form_id
+  html_hash['data-stripe-customer-id'] = stripe_customer_id if stripe_customer_id
+  html_hash['data-payola-signed-custom-fields'] = sale.verifier.generate(custom_fields) if custom_fields
 %>
 
-<script src="https://checkout.stripe.com/checkout.js"></script>
-<link rel="stylesheet" href="https://checkout.stripe.com/v3/checkout/button.css"></link>
+<script type="text/javascript" src="https://js.stripe.com/v3/"></script>
 
 <%= form_tag payola.buy_path(product_class: product_class, permalink: product_permalink), html_hash do %>
-  <button class="<%= button_class %> payola-checkout-button" id="<%= button_id %>">
-    <span class="payola-checkout-button-text" style="display: block; <%= button_inner_style %>"><%= button_text %></span>
-    <span class="payola-checkout-button-spinner" style="display: none; <%= button_inner_style %>">Please wait...</span>
-  </button>
-  <% if show_default_error_div %>
-    <div class="payola-error-target" style="display: none;" id="<%= error_div_id %>"></div>
-  <% end %>
+  <%= render 'payola/transactions/checkout_form_fields', form_id: form_id, button_text: button_text, error_div_id: error_div_id, show_default_error_div: show_default_error_div %>
 <% end %>
+
+<script type="text/javascript">
+(function() {
+  var checkout = PayolaCheckoutForm.init({
+    formId: '<%= form_id %>',
+    publishableKey: '<%= Payola.publishable_key_for_sale(sale) %>',
+    pollEndpoint: function(basePath, guid) {
+      return basePath + '/status/' + guid;
+    },
+    onSubmit: function(token, form) {
+      var email = form.querySelector("[data-payola='email']").value;
+      var basePath = form.getAttribute('data-payola-base-path');
+      var product = form.getAttribute('data-payola-product');
+      var permalink = form.getAttribute('data-payola-permalink');
+      var currency = form.getAttribute('data-payola-currency');
+      var stripeCustomerId = form.getAttribute('data-stripe-customer-id');
+      var signedCustomFields = form.getAttribute('data-payola-signed-custom-fields');
+
+      var data = new FormData();
+      data.append('stripeToken', token.id);
+      data.append('stripeEmail', email);
+      data.append('currency', currency || '');
+      if (stripeCustomerId) data.append('stripe_customer_id', stripeCustomerId);
+      if (signedCustomFields) data.append('signed_custom_fields', signedCustomFields);
+
+      PayolaCheckoutForm.submitAndPoll(form, basePath + '/buy/' + product + '/' + permalink, data, checkout.poll);
+    },
+    onPollSuccess: function(data, guid, basePath, form, retriesLeft) {
+      if (data.status === 'finished') {
+        window.location = basePath + '/confirm/' + guid;
+      } else if (data.status === 'errored') {
+        PayolaCheckoutForm.showError(form, data.error);
+      } else {
+        setTimeout(function() { checkout.poll(guid, retriesLeft - 1); }, 500);
+      }
+    }
+  });
+})();
+</script>
