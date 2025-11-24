@@ -78,6 +78,22 @@ var PayolaStripe = {
                         }
                     }
                 };
+
+                // Allow forms to override Stripe Elements base styles via data-payola-stripe-style attribute
+                // Expected format: JSON string like '{"fontSize":"16px","color":"#333"}'
+                // For available style properties, see: https://docs.stripe.com/js/appendix/style
+                var customStyle = form.data('payola-stripe-style');
+                if (customStyle) {
+                    try {
+                        var styleOverrides = typeof customStyle === 'string' ? JSON.parse(customStyle) : customStyle;
+                        $.extend(options.style.base, styleOverrides);
+                    } catch (e) {
+                        if (typeof console !== 'undefined' && console.warn) {
+                            console.warn('Payola: Invalid data-payola-stripe-style JSON:', e);
+                        }
+                    }
+                }
+
                 var cardNumber = PayolaStripe.createCardElements(
                     numberMount, expiryMount, cvcMount, options, errorElement
                 );

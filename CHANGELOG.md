@@ -75,6 +75,7 @@ All notable changes to Payola will be documented in this file.
 - **Replace `customer.subscriptions.create()` with `Stripe::Subscription.create()`**: Subscription creation now uses the top-level `Stripe::Subscription.create()` API instead of the deprecated customer-nested endpoint.
 
 ### Enhancements
+- **Add `data-payola-stripe-style` attribute for customizing Stripe Elements appearance**: Forms can now customize the visual appearance of Stripe Elements (card number, expiration, CVC) by adding a `data-payola-stripe-style` attribute with a JSON object containing style properties. This allows per-form customization of properties like `fontSize`, `color`, `fontFamily`, `fontWeight`, and other [Stripe Elements base style properties](https://docs.stripe.com/js/appendix/style). Example: `data-payola-stripe-style='{"fontSize":"16px","color":"#333"}'`. This enhancement enables forms to match Stripe Elements styling to their site's design without requiring code changes to the Payola gem.
 - Add support for Ruby 3.4. Previously, only Ruby 2.6 and earlier were supported.
 - Update the `rails` gem from 5.0 to 8.0
 - Update the `stripe` gem from 2.8 to 13.5.1
