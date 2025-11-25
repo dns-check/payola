@@ -6,6 +6,9 @@ All notable changes to Payola will be documented in this file.
 
 ## Unreleased
 
+### Maintainer Change
+- **New maintainer**: This project is now maintained by Matt Rideout ([https://www.mattrideout.com](https://www.mattrideout.com)) as of January 2024. The [original project](https://github.com/payolapayments/payola) was created by Pete Keen and archived as read-only in October 2018.
+
 ### Breaking Changes
 - **Migrate to Stripe Elements**: All JavaScript files now use Stripe.js v3 with Stripe Elements for secure card input. Previously, the codebase used `data-stripe` input fields with manual card data extraction.
 

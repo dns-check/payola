@@ -22,7 +22,7 @@ To see Payola in action, check out the site for [Mastering Modern Payments: Usin
 Add Payola to your Gemfile:
 
 ```ruby
-gem 'payola-payments'
+gem 'payola-payments', github: 'mrideout/payola', branch: 'master'
 ```
 
 Run the installer:
@@ -62,7 +62,7 @@ Please see the LICENSE file for licensing details.
 
 ## Changelog
 
-Please see [CHANGELOG.md](CHANGELOG.md).
+Please see [CHANGELOG.md](CHANGELOG.md) for all changes made since the fork in January 2024. If there's demand, a new gem version can be released to RubyGems.
 
 ## Contributing
 
@@ -75,4 +75,6 @@ Version announcements happen on the [Payola Payments Google group](https://group
 
 ## Author
 
-Pete Keen, [@zrail](https://twitter.com/zrail), [https://www.petekeen.net](https://www.petekeen.net)
+**Current Maintainer:** Matt Rideout, [https://www.mattrideout.com](https://www.mattrideout.com)
+
+This is a fork maintained since January 2024. The original project was created by Pete Keen ([@zrail](https://twitter.com/zrail), [https://www.petekeen.net](https://www.petekeen.net)) and archived as read-only in October 2018.

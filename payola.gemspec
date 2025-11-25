@@ -5,9 +5,9 @@ require "payola/version"
 Gem::Specification.new do |s|
   s.name        = "payola-payments"
   s.version     = Payola::VERSION
-  s.authors     = ["Pete Keen"]
-  s.email       = ["pete@payola.io"]
-  s.homepage    = "https://www.payola.io"
+  s.authors     = ["Matt Rideout"]
+  s.email       = ["https://www.mattrideout.com"]
+  s.homepage    = "https://github.com/mattrideout/payola"
   s.summary     = "Drop-in Rails engine for accepting payments with Stripe"
   s.description = "One-off and subscription payments for your Rails application"
   s.license     = "LGPL-3.0"
